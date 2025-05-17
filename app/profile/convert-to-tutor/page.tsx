@@ -1,0 +1,200 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChevronLeft, Plus, Trash2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
+
+export default function ConvertToTutorPage() {
+  const router = useRouter()
+  const [formData, setFormData] = useState({
+    bio: "",
+  })
+
+  const [courses, setCourses] = useState<{ id: number; name: string; level: string; grade: string }[]>([])
+  const [newCourse, setNewCourse] = useState({ name: "", level: "", grade: "" })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleNewCourseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setNewCourse((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleNewCourseSelectChange = (value: string) => {
+    setNewCourse((prev) => ({ ...prev, level: value }))
+  }
+
+  const addCourse = () => {
+    if (newCourse.name && newCourse.level && newCourse.grade) {
+      // Validar que la nota sea un número entre 1.0 y 7.0
+      const grade = Number.parseFloat(newCourse.grade)
+      if (isNaN(grade) || grade < 1.0 || grade > 7.0) {
+        alert("La nota debe ser un número entre 1.0 y 7.0")
+        return
+      }
+
+      setCourses([...courses, { id: Date.now(), ...newCourse }])
+      setNewCourse({ name: "", level: "", grade: "" })
+    } else {
+      alert("Por favor completa todos los campos del curso")
+    }
+  }
+
+  const removeCourse = (id: number) => {
+    setCourses(courses.filter((course) => course.id !== id))
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Perfil de tutor creado:", { ...formData, courses })
+    router.push("/dashboard/tutor")
+  }
+
+  return (
+    <div className="container py-10">
+      <div className="mb-6 flex items-center">
+        <Link href="/profile/student" className="mr-4">
+          <Button variant="ghost" size="icon">
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold text-sky-700">Convertirme en tutor</h1>
+      </div>
+
+      <Alert className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Información importante</AlertTitle>
+        <AlertDescription>
+          Al convertirte en tutor, podrás crear tutorías, establecer tu disponibilidad y ayudar a otros estudiantes.
+          Mantendrás tu perfil de estudiante y podrás cambiar entre ambos roles.
+        </AlertDescription>
+      </Alert>
+
+      <Card className="mx-auto max-w-2xl">
+        <CardHeader>
+          <CardTitle>Información de tutor</CardTitle>
+          <CardDescription>Completa la información necesaria para tu perfil de tutor</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="bio">Biografía profesional</Label>
+                <Textarea
+                  id="bio"
+                  name="bio"
+                  placeholder="Describe tu experiencia, habilidades y estilo de enseñanza"
+                  value={formData.bio}
+                  onChange={handleChange}
+                  rows={4}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base">Cursos que puedes enseñar</Label>
+                <p className="text-sm text-muted-foreground">Agrega los cursos en los que puedes ofrecer tutorías</p>
+              </div>
+
+              {courses.length > 0 && (
+                <div className="grid gap-2">
+                  {courses.map((course) => (
+                    <div key={course.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="flex items-center gap-2">
+                        <span>{course.name}</span>
+                        <Badge variant="outline" className="bg-sky-50 text-sky-700">
+                          {course.level}
+                        </Badge>
+                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                          Nota: {course.grade}
+                        </Badge>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => removeCourse(course.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid gap-4 rounded-lg border p-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="courseName">Nombre del curso</Label>
+                    <Input
+                      id="courseName"
+                      name="name"
+                      value={newCourse.name}
+                      onChange={handleNewCourseChange}
+                      placeholder="Ej: Cálculo I"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="courseLevel">Nivel</Label>
+                    <Select onValueChange={handleNewCourseSelectChange}>
+                      <SelectTrigger id="courseLevel">
+                        <SelectValue placeholder="Selecciona el nivel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Básico">Básico</SelectItem>
+                        <SelectItem value="Intermedio">Intermedio</SelectItem>
+                        <SelectItem value="Avanzado">Avanzado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="courseGrade">Nota de aprobación</Label>
+                    <Input
+                      id="courseGrade"
+                      name="grade"
+                      value={newCourse.grade}
+                      onChange={handleNewCourseChange}
+                      placeholder="Ej: 6.5"
+                      type="number"
+                      min="1.0"
+                      max="7.0"
+                      step="0.1"
+                    />
+                    <p className="text-xs text-muted-foreground">Nota entre 1.0 y 7.0</p>
+                  </div>
+                </div>
+                <Button type="button" variant="outline" onClick={addCourse} className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Agregar Curso
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                <strong>Nota:</strong> En el futuro, solo podrás agregar cursos con nota de aprobación mayor a 5.0
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" type="button" onClick={() => router.push("/profile/student")}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="bg-sky-600 hover:bg-sky-700">
+              Convertirme en tutor
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  )
+}
