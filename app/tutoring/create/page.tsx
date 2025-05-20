@@ -1,50 +1,244 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth, type UserProfile } from "../../../hooks/use-auth";
+import { toast } from "@/components/ui/use-toast";
+
+interface Course {
+  id: number;
+  name: string;
+  subject_area: string;
+}
 
 export default function CreateTutoringPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const {
+    getCurrentUserProfile,
+    loading: authLoading,
+    error: authError,
+  } = useAuth();
+  const [currentUserProfile, setCurrentUserProfile] =
+    useState<UserProfile | null>(null);
+  const [apiToken, setApiToken] = useState<string | null>(null);
+  const [coursesList, setCoursesList] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
   const [formData, setFormData] = useState({
     title: "",
-    area: "",
+    courseId: "", 
     description: "",
-    day: "",
+    date: "",
     startTime: "",
     endTime: "",
-    duration: "",
     location: "",
-  })
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      // Fetch profile and token
+      const profile = await getCurrentUserProfile();
+      setCurrentUserProfile(profile);
+      const storedToken = localStorage.getItem("token");
+      setApiToken(storedToken);
+
+      if (!profile || !storedToken) {
+        toast({
+          title: "Autenticación requerida",
+          description: "Por favor, inicia sesión para crear una tutoría.",
+          variant: "destructive",
+        });
+        router.push("/login");
+        return; // Stop further execution if not authenticated
+      }
+
+      // Fetch courses
+      try {
+        setLoadingCourses(true);
+        const coursesResponse = await fetch("http://localhost:3000/courses", { // Assuming this endpoint
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+          },
+        });
+        if (!coursesResponse.ok) {
+          throw new Error("Error al cargar la lista de cursos");
+        }
+        const coursesData: Course[] = await coursesResponse.json();
+        setCoursesList(coursesData);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        toast({
+          title: "Error al cargar cursos",
+          description: (error as Error).message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchInitialData();
+  }, [getCurrentUserProfile, router]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!currentUserProfile || !currentUserProfile.user || !apiToken) {
+      toast({
+        title: "Error de autenticación",
+        description:
+          "No se pudo obtener la información del usuario o el token. Por favor, reintenta iniciar sesión.",
+        variant: "destructive",
+      });
+      router.push("/login");
+      return;
+    }
+
+    if (
+      !currentUserProfile.tutorProfile ||
+      !currentUserProfile.tutorProfile.id
+    ) {
+      toast({
+        title: "Error de perfil de tutor",
+        description:
+          "No se pudo encontrar el perfil de tutor. Asegúrate de que tu perfil de tutor esté completo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.date) {
+      toast({
+        title: "Campo requerido",
+        description: "Por favor, selecciona una fecha para la tutoría.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.courseId) { // Changed from formData.area
+      toast({
+        title: "Campo requerido",
+        description: "Por favor, selecciona un curso para la tutoría.", // Changed "área" to "curso"
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const courseIdNum = parseInt(formData.courseId, 10);
+    if (isNaN(courseIdNum)) {
+      toast({
+        title: "Error en el curso", // Changed "área" to "curso"
+        description: "El curso seleccionado no es válido.", // Changed "área" to "curso"
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const startTimeISO = new Date(
+      `${formData.date}T${formData.startTime}:00`
+    ).toISOString();
+    const endTimeISO = new Date(
+      `${formData.date}T${formData.endTime}:00`
+    ).toISOString();
+
+    const tutoriaData = {
+      tutorId: currentUserProfile.tutorProfile.id,
+      courseId: courseIdNum, // Use parsed courseId
+      title: formData.title,
+      description: formData.description,
+      date: new Date(formData.date).toISOString(),
+      start_time: startTimeISO,
+      end_time: endTimeISO,
+      location: formData.location,
+    };
+
+    try {
+      console.log("Datos de tutoría a enviar:", tutoriaData);
+      const response = await fetch("http://localhost:3000/tutorias", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiToken}`,
+        },
+        body: JSON.stringify(tutoriaData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al crear la tutoría");
+      }
+
+      toast({
+        title: "Tutoría Creada",
+        description: "La tutoría ha sido creada exitosamente.",
+      });
+      router.push("/tutoring");
+    } catch (error) {
+      console.error("Error creating tutoring session:", error);
+      toast({
+        title: "Error",
+        description:
+          (error as Error).message ||
+          "No se pudo crear la tutoría. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (authLoading || !currentUserProfile) {
+    return (
+      <div className="container py-10 text-center">
+        Cargando perfil del usuario...
+      </div>
+    );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Tutoría creada:", formData)
-    router.push("/tutoring")
+  if (authError) {
+    return (
+      <div className="container py-10 text-center text-red-500">
+        Error al cargar: {authError}
+      </div>
+    );
   }
 
   return (
     <div className="container py-10">
       <div className="mb-6 flex items-center">
-        <Link href="/" className="mr-4">
+        <Link href="/dashboard/tutor" className="mr-4">
           <Button variant="ghost" size="icon">
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -55,7 +249,9 @@ export default function CreateTutoringPage() {
       <Card className="mx-auto max-w-2xl">
         <CardHeader>
           <CardTitle>Detalles de la Tutoría</CardTitle>
-          <CardDescription>Completa la información para crear una nueva tutoría</CardDescription>
+          <CardDescription>
+            Completa la información para crear una nueva tutoría
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -71,19 +267,28 @@ export default function CreateTutoringPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="area">Área</Label>
-              <Select value={formData.area} onValueChange={(value) => handleSelectChange("area", value)}>
-                <SelectTrigger id="area">
-                  <SelectValue placeholder="Selecciona un área" />
+              <Label htmlFor="courseId">Curso</Label> {/* Changed "Área" to "Curso" and htmlFor */}
+              <Select
+                value={formData.courseId}
+                onValueChange={(value) => handleSelectChange("courseId", value)}
+                required
+                disabled={loadingCourses || coursesList.length === 0}
+              >
+                <SelectTrigger id="courseId"> {/* Changed id */}
+                  <SelectValue placeholder={loadingCourses ? "Cargando cursos..." : "Selecciona un curso"} /> {/* Changed placeholder */}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Matemáticas">Matemáticas</SelectItem>
-                  <SelectItem value="Física">Física</SelectItem>
-                  <SelectItem value="Química">Química</SelectItem>
-                  <SelectItem value="Informática">Informática</SelectItem>
-                  <SelectItem value="Economía">Economía</SelectItem>
-                  <SelectItem value="Estadística">Estadística</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
+                  {loadingCourses ? (
+                    <SelectItem value="loading" disabled>Cargando...</SelectItem>
+                  ) : coursesList.length === 0 ? (
+                    <SelectItem value="no-courses" disabled>No hay cursos disponibles</SelectItem>
+                  ) : (
+                    coursesList.map((course) => (
+                      <SelectItem key={course.id} value={course.id.toString()}>
+                        {course.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -101,39 +306,16 @@ export default function CreateTutoringPage() {
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="day">Día</Label>
-                <Select value={formData.day} onValueChange={(value) => handleSelectChange("day", value)}>
-                  <SelectTrigger id="day">
-                    <SelectValue placeholder="Selecciona un día" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Lunes">Lunes</SelectItem>
-                    <SelectItem value="Martes">Martes</SelectItem>
-                    <SelectItem value="Miércoles">Miércoles</SelectItem>
-                    <SelectItem value="Jueves">Jueves</SelectItem>
-                    <SelectItem value="Viernes">Viernes</SelectItem>
-                    <SelectItem value="Sábado">Sábado</SelectItem>
-                    <SelectItem value="Domingo">Domingo</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="date">Fecha</Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  required
+                />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Duración</Label>
-                <Select value={formData.duration} onValueChange={(value) => handleSelectChange("duration", value)}>
-                  <SelectTrigger id="duration">
-                    <SelectValue placeholder="Selecciona duración" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1 hora">1 hora</SelectItem>
-                    <SelectItem value="1.5 horas">1.5 horas</SelectItem>
-                    <SelectItem value="2 horas">2 horas</SelectItem>
-                    <SelectItem value="2.5 horas">2.5 horas</SelectItem>
-                    <SelectItem value="3 horas">3 horas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="startTime">Hora de inicio</Label>
                 <Input
@@ -165,20 +347,27 @@ export default function CreateTutoringPage() {
                 placeholder="Ej: Biblioteca Central, Sala de Estudio 3, Online"
                 value={formData.location}
                 onChange={handleChange}
-                required
               />
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" type="button" onClick={() => router.push("/")}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => router.push("/dashboard/tutor")}
+            >
               Cancelar
             </Button>
-            <Button type="submit" className="bg-sky-600 hover:bg-sky-700">
+            <Button
+              type="submit"
+              className="bg-sky-600 hover:bg-sky-700"
+              disabled={authLoading || !currentUserProfile || !apiToken}
+            >
               Crear Tutoría
             </Button>
           </CardFooter>
         </form>
       </Card>
     </div>
-  )
+  );
 }

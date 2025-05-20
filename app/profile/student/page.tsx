@@ -393,7 +393,7 @@ export default function StudentProfilePage() {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="general">Información General</TabsTrigger>
               <TabsTrigger value="academic">
-                Intereses Académicos
+                Cursos de Interés
               </TabsTrigger>{" "}
               {/* Cambiado para estudiante */}
             </TabsList>
@@ -461,9 +461,9 @@ export default function StudentProfilePage() {
             <TabsContent value="academic" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Detalles Académicos e Intereses</CardTitle>
+                  <CardTitle>Detalles Académicos y Cursos de Interés</CardTitle> {/* Changed "Intereses" to "Cursos de Interés" */}
                   <CardDescription>
-                    Actualiza tu información académica y áreas de interés.
+                    Actualiza tu información académica y cursos de interés. {/* Changed "áreas" to "cursos" */}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -501,9 +501,9 @@ export default function StudentProfilePage() {
                   </div>
                   <div>
                     <Label className="mb-2 block font-medium">
-                      Áreas de Interés
+                      Cursos de Interés
                     </Label>{" "}
-                    {/* Estilo de Label */}
+                    {/* Estilo de Label, Changed "Áreas" to "Cursos" */}
                     <div className="flex flex-wrap gap-2 mb-3">
                       {interests.map((interest) => (
                         <Badge
@@ -534,7 +534,7 @@ export default function StudentProfilePage() {
                         {/* sr-only si el placeholder es suficiente */}
                         <Input
                           id="newInterest"
-                          placeholder="Añadir nueva área de interés (curso)"
+                          placeholder="Añadir nuevo curso de interés" /* Changed placeholder */
                           value={newInterest}
                           onChange={handleNewInterestChange}
                           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) =>

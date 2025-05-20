@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ChevronLeft, Calendar, Clock, MapPin, User, AlertCircle } from "lucide-react"
+import { ChevronLeft, Calendar, Clock, MapPin, User, AlertCircle, Mail } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 
 interface UserProfile {
@@ -21,7 +21,8 @@ interface TutorProfile {
   bio?: string;
   university?: string;
   degree?: string;
-  year?: string;
+  academic_year?: string; 
+  tutoring_contact_email?: string; 
 }
 
 interface Course {
@@ -108,6 +109,16 @@ export default function TutoringDetailsPage() {
   
   const schedule = tutoring.schedule || `${new Date(tutoring.date).toLocaleDateString()} ${new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   const duration = tutoring.duration || `${((new Date(tutoring.end_time).getTime() - new Date(tutoring.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs`;
+
+  const formatAcademicYear = (year?: string | null): string => {
+    if (!year) return "Año no especificado";
+    const yearNum = parseInt(year, 10);
+   
+    if (!isNaN(yearNum) && yearNum.toString() === year.trim()) { 
+      return `${yearNum}° año`;
+    }
+    return year; 
+  };
 
   return (
     <div className="container py-10">
@@ -198,7 +209,14 @@ export default function TutoringDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-sky-600" />
-                  <p className="text-sm text-muted-foreground">{tutoring.tutor?.year || "Año no especificado"}</p>
+                  <p className="text-sm text-muted-foreground">{formatAcademicYear(tutoring.tutor?.academic_year)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-sky-600" />
+                  <div>
+                    <p className="font-medium">Email Tutorías</p>
+                    <p className="text-sm text-muted-foreground">{tutoring.tutor?.tutoring_contact_email || tutoring.tutor?.user?.email || "Email no disponible"}</p>
+                  </div>
                 </div>
               </div>
             </CardContent>

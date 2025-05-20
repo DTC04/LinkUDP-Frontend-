@@ -5,21 +5,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Filter, Plus } from "lucide-react"
-import { useEffect, useState, useCallback } from "react" // Added useCallback
+import { useEffect, useState, useCallback } from "react" 
 import { jwtDecode } from "jwt-decode"
-import { useAuth } from "@/hooks/use-auth" // Import useAuth
-import type { UserProfile as AuthUserProfile } from "@/hooks/use-auth" // Alias UserProfile
+import { useAuth } from "@/hooks/use-auth" 
+import type { UserProfile as AuthUserProfile } from "@/hooks/use-auth" 
 
-// Local interfaces for Tutoring data structure
-interface UserProfile { // Local UserProfile for tutor details within a session
+
+interface UserProfile { 
   full_name: string;
   email?: string;
   photo_url?: string;
 }
 
-interface TutorProfile { // Local TutorProfile for tutor object within a Tutoring session
+interface TutorProfile { 
   id: number;
-  user: UserProfile; // Uses the local UserProfile above
+  user: UserProfile; 
   bio?: string;
 }
 
@@ -46,34 +46,35 @@ interface Tutoring {
 
 export default function TutoringListPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [loggedInUserProfile, setLoggedInUserProfile] = useState<AuthUserProfile | null>(null) // Updated state variable name and type
+  const [loggedInUserProfile, setLoggedInUserProfile] = useState<AuthUserProfile | null>(null) 
   const [tutoringsData, setTutoringsData] = useState<Tutoring[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [dashboardUrl, setDashboardUrl] = useState<string>("/login") // State for dynamic dashboard URL
-  const { getCurrentUserProfile, logout } = useAuth() // Destructure getCurrentUserProfile and logout
+  const [dashboardUrl, setDashboardUrl] = useState<string>("/login") 
+  const [profileUrl, setProfileUrl] = useState<string>("/login") 
+  const { getCurrentUserProfile, logout } = useAuth() 
 
   const fetchProfileAndSetLoginStatus = useCallback(async () => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          jwtDecode(token); // Check if token is valid
+          jwtDecode(token); 
           setIsLoggedIn(true);
           const profile = await getCurrentUserProfile();
-          setLoggedInUserProfile(profile); // Updated state setter
-          if (!profile) { // If profile fetch fails (e.g. invalid token really)
+          setLoggedInUserProfile(profile); 
+          if (!profile) { 
             setIsLoggedIn(false);
-            localStorage.removeItem("token"); // Clean up bad token
+            localStorage.removeItem("token");
           }
         } catch (e) {
           console.error("Token decoding failed or profile fetch failed:", e);
           setIsLoggedIn(false);
-          localStorage.removeItem("token"); // Clean up bad token
-          setLoggedInUserProfile(null); // Updated state setter
+          localStorage.removeItem("token"); 
+          setLoggedInUserProfile(null); 
         }
       } else {
         setIsLoggedIn(false);
-        setLoggedInUserProfile(null); // Updated state setter
+        setLoggedInUserProfile(null); 
       }
     }
   }, [getCurrentUserProfile]);
@@ -86,14 +87,18 @@ export default function TutoringListPage() {
     if (isLoggedIn && loggedInUserProfile && loggedInUserProfile.user) {
       if (loggedInUserProfile.user.role === "TUTOR" || loggedInUserProfile.user.role === "BOTH") {
         setDashboardUrl("/dashboard/tutor");
+        setProfileUrl("/profile/tutor");
       } else if (loggedInUserProfile.user.role === "STUDENT") {
         setDashboardUrl("/dashboard/student");
+        setProfileUrl("/profile/student");
       } else {
-        console.warn(`Rol de usuario (${loggedInUserProfile.user.role}) no manejado para el enlace del dashboard, usando /dashboard/student por defecto.`);
-        setDashboardUrl("/dashboard/student"); // Fallback, o podría ser /
+        console.warn(`Rol de usuario (${loggedInUserProfile.user.role}) no manejado para enlaces, usando /dashboard/student y /profile/student por defecto.`);
+        setDashboardUrl("/dashboard/student"); 
+        setProfileUrl("/profile/student"); 
       }
     } else if (!isLoggedIn) {
-      setDashboardUrl("/login"); // Si no está logueado, el dashboard link no debería aparecer o llevar a login
+      setDashboardUrl("/login"); 
+      setProfileUrl("/login");
     }
   }, [isLoggedIn, loggedInUserProfile]);
 
@@ -140,13 +145,13 @@ export default function TutoringListPage() {
                   Buscar Tutorías
                 </Link>
                 <Link
-                  href={dashboardUrl} // Use dynamic dashboard URL
+                  href={dashboardUrl} 
                   className="text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
                   Mi Dashboard
                 </Link>
                 <Link
-                  href="/profile/student"
+                  href={profileUrl} 
                   className="text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
                   Mi Perfil
