@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "LinkUDPFrontend",
+=======
+  "name": "linkudp-frontend",
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -44,6 +48,10 @@
     "date-fns": "^3.0.0",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
+<<<<<<< HEAD
+=======
+    "jwt-decode": "^4.0.0",
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-themes": "^0.4.4",
@@ -60,10 +68,19 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+<<<<<<< HEAD
+=======
+    "@types/jwt-decode": "^3.1.0",
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
     "@types/node": "^22",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
+<<<<<<< HEAD
     "typescript":"^5"}
+=======
+    "typescript": "^5"
+  }
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
 }

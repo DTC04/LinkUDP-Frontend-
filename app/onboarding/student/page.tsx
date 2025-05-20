@@ -80,7 +80,9 @@ export default function StudentOnboardingPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="year">Año de estudio</Label>
-              <Select onValueChange={(value) => handleSelectChange("year", value)}>
+              <Select
+                onValueChange={(value) => handleSelectChange("study_year", value)}
+              >
                 <SelectTrigger id="year">
                   <SelectValue placeholder="Selecciona tu año de estudio" />
                 </SelectTrigger>

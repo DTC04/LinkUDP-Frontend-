@@ -1,15 +1,32 @@
+<<<<<<< HEAD
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Filter } from "lucide-react"
+=======
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Filter } from "lucide-react";
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
+<<<<<<< HEAD
           <Link href="/" className="flex items-center">
             <span className="text-xl font-bold text-sky-600">LINKUDP</span>
           </Link>
@@ -18,6 +35,22 @@ export default function Home() {
               Iniciar Sesión
             </Link>
             <Link href="/register" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+=======
+          <span className="text-xl font-bold text-sky-600 cursor-default select-none">
+            LINKUDP
+          </span>
+          <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              href="/register"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
               Registrarse
             </Link>
           </nav>
@@ -32,15 +65,26 @@ export default function Home() {
                   Conecta con tutores universitarios
                 </h1>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+<<<<<<< HEAD
                   LINKUDP te ayuda a encontrar tutores para tus materias universitarias de forma rápida y sencilla.
+=======
+                  LINKUDP te ayuda a encontrar tutores para tus materias
+                  universitarias de forma rápida y sencilla.
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
                 </p>
               </div>
               <div className="space-x-4">
                 <Link href="/register">
+<<<<<<< HEAD
                   <Button className="bg-sky-600 hover:bg-sky-700">Registrarse</Button>
                 </Link>
                 <Link href="/tutoring">
                   <Button variant="outline">Ver tutorías disponibles</Button>
+=======
+                  <Button className="bg-sky-600 hover:bg-sky-700">
+                    Registrarse
+                  </Button>
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
                 </Link>
               </div>
             </div>
@@ -49,17 +93,33 @@ export default function Home() {
         <section className="container px-4 py-12 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
+<<<<<<< HEAD
               <h2 className="text-2xl font-bold tracking-tight text-sky-700">Tutorías Disponibles</h2>
               <p className="text-muted-foreground">Encuentra la tutoría que necesitas para tus materias.</p>
             </div>
             <div className="flex items-center gap-2">
               <Input className="max-w-[200px]" placeholder="Buscar tutoría..." />
+=======
+              <h2 className="text-2xl font-bold tracking-tight text-sky-700">
+                Tutorías Disponibles
+              </h2>
+              <p className="text-muted-foreground">
+                Encuentra la tutoría que necesitas para tus materias.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                className="max-w-[200px]"
+                placeholder="Buscar tutoría..."
+              />
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
               <Button variant="outline" size="icon">
                 <Filter className="h-4 w-4" />
                 <span className="sr-only">Filtrar tutorías</span>
               </Button>
             </div>
           </div>
+<<<<<<< HEAD
           <div className="grid gap-6 pt-8 md:grid-cols-2 lg:grid-cols-3">
             {tutorings.map((tutoring) => (
               <Link href={`/tutoring/${tutoring.id}`} key={tutoring.id}>
@@ -86,6 +146,9 @@ export default function Home() {
               </Link>
             ))}
           </div>
+=======
+          <div className="grid gap-6 pt-8 md:grid-cols-2 lg:grid-cols-3"></div>
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
         </section>
       </main>
       <footer className="border-t py-6 md:py-0">
@@ -96,6 +159,7 @@ export default function Home() {
         </div>
       </footer>
     </div>
+<<<<<<< HEAD
   )
 }
 
@@ -155,3 +219,9 @@ const tutorings = [
     duration: "2 horas",
   },
 ]
+=======
+  );
+}
+
+const tutorings = [];
+>>>>>>> 91eaf8eece301544045eee58500715486608cde4
