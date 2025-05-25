@@ -10,6 +10,7 @@ import { ChevronLeft, Calendar, Clock, MapPin, User, AlertCircle, Mail } from "l
 import { useRouter, useParams } from "next/navigation"
 
 interface UserProfile {
+  id: number; // Add the user's ID
   full_name: string;
   email?: string;
   photo_url?: string;
@@ -225,11 +226,12 @@ export default function TutoringDetailsPage() {
                 variant="outline" 
                 className="w-full" 
                 onClick={() => {
-                  if (tutoring?.tutor?.id) {
-                    router.push(`/profile/tutor/${tutoring.tutor.id}`)
+                  // Use the user's ID from the nested user object
+                  if (tutoring?.tutor?.user?.id) { 
+                    router.push(`/profile/tutor/${tutoring.tutor.user.id}`)
                   }
                 }} 
-                disabled={!tutoring?.tutor?.id}
+                disabled={!tutoring?.tutor?.user?.id} // Also update the disabled condition
               >
                 Ver Perfil Completo
               </Button>

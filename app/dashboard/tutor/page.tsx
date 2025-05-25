@@ -114,12 +114,13 @@ export default function TutorDashboardPage() {
       
       const fetchAvailability = async () => {
         if (currentUserProfile?.tutorProfile?.availability) {
+           // Ensure av.id is correctly populated from the backend now
            setAvailabilityData(currentUserProfile.tutorProfile.availability.map((av: any) => ({
-            id: av.day_of_week + av.start_time, 
-            day: av.day_of_week,
+            id: av.id, // Use the unique ID from the backend
+            day: av.day_of_week, // Keep original day for display if needed, or map it
             startTime: av.start_time,
             endTime: av.end_time,
-            status: "available", 
+            status: "available", // This status seems to be frontend-only for now
           })));
         }
       };

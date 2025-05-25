@@ -29,9 +29,10 @@ import {
   Save,
   Plus,
   Trash2,
-  Upload,
+  // Upload, // No longer needed for direct URL input
   Clock,
   AlertCircle,
+  Link2, // Icon for URL input
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -222,16 +223,17 @@ export default function TutorProfileEditPageOriginalDesign() {
     if (pageMessage) setPageMessage(null);
   };
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfile((prev) => ({ ...prev, photo_url: URL.createObjectURL(file) }));
-      setPageMessage({
-        type: "success",
-        text: "Vista previa de imagen. Subida real no implementada.",
-      });
-    }
-  };
+  // Remove handleFileUpload as we are using direct URL input now.
+  // const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     setProfile((prev) => ({ ...prev, photo_url: URL.createObjectURL(file) }));
+  //     setPageMessage({
+  //       type: "success",
+  //       text: "Vista previa de imagen. Subida real no implementada.",
+  //     });
+  //   }
+  // };
 
   const handleNewExpertiseChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -494,23 +496,22 @@ export default function TutorProfileEditPageOriginalDesign() {
                     {profile.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    document.getElementById("avatarUploadField")?.click()
-                  }
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Cambiar Foto
-                </Button>
-                <input
-                  type="file"
-                  id="avatarUploadField"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                />
+                {/* Input for Photo URL */}
+                <div className="w-full space-y-1 mt-2">
+                  <Label htmlFor="photo_url">URL de Foto de Perfil</Label>
+                  <div className="flex items-center space-x-2">
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="photo_url"
+                      name="photo_url"
+                      type="url"
+                      placeholder="https://ejemplo.com/imagen.jpg"
+                      value={profile.photo_url || ""}
+                      onChange={handleProfileChange}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
