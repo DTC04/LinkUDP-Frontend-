@@ -80,6 +80,29 @@ const dayOrder: string[] = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES",
 // Note: If backend uses 'MIÉRCOLES' with an accent, update MIERCOLES above accordingly.
 // Based on logs, it seems to be 'LUNES', 'JUEVES', 'VIERNES' without accents for those.
 // We'll assume MIERCOLES for now, adjust if needed based on actual data for Wednesday.
+function formatHour(timeOrIso: string) {
+  // Si es solo una hora como "08:30", construye una fecha completa en UTC
+  if (/^\d{2}:\d{2}$/.test(timeOrIso)) {
+    // Concatenar una fecha base
+    timeOrIso = `1970-01-01T${timeOrIso}:00Z`
+  }
+
+  const date = new Date(timeOrIso)
+
+  if (isNaN(date.getTime())) {
+    return "Hora inválida"
+  }
+
+  return date.toLocaleTimeString("es-CL", {
+    timeZone: "America/Santiago",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+}
+
+
+
 
 export default function TutorPublicProfilePage() {
   const router = useRouter()
@@ -257,19 +280,20 @@ export default function TutorPublicProfilePage() {
                       }
                       return a.start_time.localeCompare(b.start_time);
                     })
-                    .map((slot: AvailabilityBlock) => (
-                      <div key={slot.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-slate-50 transition-colors">
+                    .map((block: AvailabilityBlock) => (
+                    <div key={block.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-slate-50 transition-colors">
                         <div>
-                          <p className="font-medium text-sky-700">{dayOfWeekMap[slot.day_of_week] || slot.day_of_week}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {slot.start_time} - {slot.end_time}
-                          </p>
+                        <p className="font-medium text-sky-700">{dayOfWeekMap[block.day_of_week] || block.day_of_week}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {formatHour(block.start_time)} - {formatHour(block.end_time)}
+                        </p>
                         </div>
                         <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
-                          Disponible
+                        Disponible
                         </Badge>
-                      </div>
-                    ))}
+                    </div>
+                    ))
+                    }
                 </CardContent>
               </Card>
             ) : (

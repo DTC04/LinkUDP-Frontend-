@@ -41,6 +41,11 @@ export default function TutorDashboardPage() {
   const [myTutoringsData, setMyTutoringsData] = useState<Session[]>([])
   const [availabilityData, setAvailabilityData] = useState<any[]>([]) 
   const [loadingData, setLoadingData] = useState(true)
+  const dayOrder = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']
+
+  const sortedAvailability = [...availabilityData].sort((a, b) => {
+    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
+  })
 
   useEffect(() => {
     const fetchProfileAndToken = async () => {
@@ -114,16 +119,18 @@ export default function TutorDashboardPage() {
       
       const fetchAvailability = async () => {
         if (currentUserProfile?.tutorProfile?.availability) {
-           // Ensure av.id is correctly populated from the backend now
-           setAvailabilityData(currentUserProfile.tutorProfile.availability.map((av: any) => ({
-            id: av.id, // Use the unique ID from the backend
-            day: av.day_of_week, // Keep original day for display if needed, or map it
-            startTime: av.start_time,
-            endTime: av.end_time,
-            status: "available", // This status seems to be frontend-only for now
-          })));
+          setAvailabilityData(
+            currentUserProfile.tutorProfile.availability.map((av: any) => ({
+              id: av.day_of_week + av.start_time,
+              day: av.day_of_week,
+              startTime: new Date(av.start_time),
+              endTime: new Date(av.end_time),
+              status: "available",
+            }))
+          )
         }
-      };
+      }
+
 
 
       Promise.all([fetchMyTutorings(), fetchUpcomingSessions(), fetchAvailability()]).finally(() => setLoadingData(false))
@@ -310,14 +317,15 @@ export default function TutorDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
-                    {availabilityData.length > 0 ? availabilityData.map((slot) => (
+                    {availabilityData.length > 0 ? sortedAvailability.map((slot) => (
                       <div key={slot.id} className="flex items-center justify-between rounded-lg border p-3">
                         <div>
                           <p className="font-medium">{slot.day}</p>
                           <p className="text-sm text-muted-foreground">
-                            {slot.startTime} - {slot.endTime}
+                            {slot.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                            {slot.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
-                        </div>
+                         </div>
                         <Badge variant={slot.status === "available" ? "outline" : "secondary"}>
                           {slot.status === "available" ? "Disponible" : "Reservado"}
                         </Badge>
@@ -325,7 +333,14 @@ export default function TutorDashboardPage() {
                     )) : <p className="text-muted-foreground">No has configurado tu disponibilidad.</p>}
                   </div>
                 </CardContent>
-              </Card>
+                <CardFooter className="flex justify-end">
+                  <Link href="/availability/tutor">
+                    <Button className="bg-sky-600 hover:bg-sky-700 text-white">
+                      Editar mi disponibilidad
+                    </Button>
+                  </Link>
+                </CardFooter>
+             </Card>
             </TabsContent>
           </Tabs>
 
