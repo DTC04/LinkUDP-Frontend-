@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,20 @@ export default function LoginPage() {
     // redirección automática está en useAuth()
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:3000/auth/google';
+  };
+
+  useEffect(() => {
+    // Si ya hay cookie, redirigir automáticamente
+    const token = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('access_token='));
+    if (token) {
+      router.push('/dashboard/student'); // Ajusta ruta si es necesario
+    }
+  }, [router]);
+
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <span className="text-xl font-bold text-sky-600 cursor-default select-none">
@@ -38,8 +52,12 @@ export default function LoginPage() {
       </span>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight text-sky-700">Iniciar sesión</CardTitle>
-          <CardDescription>Ingresa tus credenciales para acceder a la plataforma</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight text-sky-700">
+            Iniciar sesión
+          </CardTitle>
+          <CardDescription>
+            Ingresa tus credenciales para acceder a la plataforma
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="grid gap-4">
@@ -77,9 +95,19 @@ export default function LoginPage() {
             <Button type="submit" className="w-full bg-sky-600 hover:bg-sky-700" disabled={loading}>
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </Button>
+            <Button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full bg-red-600 hover:bg-red-700"
+            >
+              Iniciar sesión con Google
+            </Button>
             <div className="text-center text-sm text-muted-foreground">
               ¿No tienes una cuenta?{' '}
-              <Link href="/register" className="underline underline-offset-4 hover:text-primary">
+              <Link
+                href="/register"
+                className="underline underline-offset-4 hover:text-primary"
+              >
                 Registrarse
               </Link>
             </div>

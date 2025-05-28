@@ -57,7 +57,6 @@
 	  const router = useRouter();
 	  const [dashboardProfile, setDashboardProfile] =
 	    useState<DashboardProfileState | null>(null);
-	  const [apiToken, setApiToken] = useState<string | null>(null); 
 
 	  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
 	  const [historyBookings, setHistoryBookings] = useState<any[]>([]);
@@ -73,25 +72,18 @@
 	    const fetchProfileAndBookings = async () => {
 	      setLoadingProfile(true);
 	      setError(null);
-	      const currentToken = localStorage.getItem("token");
-	      setApiToken(currentToken);
-
-	      if (!currentToken) {
-	        setError("No autenticado. Redirigiendo al login...");
-	        router.push("/login");
-	        setLoadingProfile(false);
-	        return;
-	      }
 
 	      try {
 	        const profileRes = await fetch("http://localhost:3000/profile/me", {
-	          headers: { Authorization: `Bearer ${currentToken}` },
+				credentials: "include",
 	        });
 
 	        if (!profileRes.ok) {
-	          if (profileRes.status === 401 || profileRes.status === 403) localStorage.removeItem("token");
-	          throw new Error(`Error al cargar perfil: ${profileRes.status}`);
-	        }
+				if (profileRes.status === 401 || profileRes.status === 403) {
+				  router.push("/login");
+				}
+				throw new Error(`Error al cargar perfil: ${profileRes.status}`);
+			}
 	        const profileData: ApiUserResponse = await profileRes.json();
 
 	        if (profileData?.user && (profileData.user.role === "STUDENT" || profileData.user.role === "BOTH")) {
@@ -107,7 +99,7 @@
 
 	            try {
 	              const upcomingRes = await fetch(`http://localhost:3000/bookings/me?status=CONFIRMED&status=PENDING&upcoming=true`, { 
-	                headers: { Authorization: `Bearer ${currentToken}` },
+	                credentials: "include",
 	              });
 	              if (!upcomingRes.ok) throw new Error('Error al cargar próximas tutorías');
 	              const upcomingData = await upcomingRes.json();
@@ -127,7 +119,7 @@
 
 	            try {
 	              const historyRes = await fetch(`http://localhost:3000/bookings/me?status=COMPLETED&status=CANCELLED&past=true`, { 
-	                headers: { Authorization: `Bearer ${currentToken}` },
+	                credentials: "include",
 	              });
 	              if (!historyRes.ok) throw new Error('Error al cargar historial de tutorías');
 	              const historyData = await historyRes.json();
@@ -149,7 +141,7 @@
 	          setLoadingRecommendations(true);
 	          try {
 	            const recomRes = await fetch(`http://localhost:3000/tutorias?status=AVAILABLE&limit=6`, { 
-	              headers: { Authorization: `Bearer ${currentToken}` },
+					credentials: "include",
 	            });
 	            if (!recomRes.ok) throw new Error('Error al cargar tutorías recomendadas');
 	            let recommendedData = await recomRes.json();

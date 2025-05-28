@@ -30,12 +30,10 @@ interface Session {
   end_time?: string | Date
 }
 
-
 export default function TutorDashboardPage() {
   const router = useRouter()
   const { getCurrentUserProfile, loading: authLoading } = useAuth()
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null)
-  const [apiToken, setApiToken] = useState<string | null>(null)
 
   const [upcomingSessionsData, setUpcomingSessionsData] = useState<Session[]>([])
   const [myTutoringsData, setMyTutoringsData] = useState<Session[]>([])
@@ -43,13 +41,11 @@ export default function TutorDashboardPage() {
   const [loadingData, setLoadingData] = useState(true)
 
   useEffect(() => {
-    const fetchProfileAndToken = async () => {
+    const fetchProfile = async () => {
       const profile = await getCurrentUserProfile()
       setCurrentUserProfile(profile)
-      const storedToken = localStorage.getItem("token")
-      setApiToken(storedToken)
 
-      if (!profile || !storedToken) {
+      if (!profile) {
         toast({
           title: "Autenticación requerida",
           description: "Por favor, inicia sesión para ver tu dashboard.",
@@ -58,18 +54,18 @@ export default function TutorDashboardPage() {
         router.push("/login")
       }
     }
-    fetchProfileAndToken()
+    fetchProfile()
   }, [getCurrentUserProfile, router])
 
   useEffect(() => {
-    if (currentUserProfile?.tutorProfile?.id && apiToken) {
+    if (currentUserProfile?.tutorProfile?.id) {
       const tutorId = currentUserProfile.tutorProfile.id
       setLoadingData(true)
 
       const fetchMyTutorings = async () => {
         try {
           const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}`, {
-            headers: { Authorization: `Bearer ${apiToken}` },
+            credentials: "include",
           })
           if (!res.ok) throw new Error("Error al cargar mis tutorías")
           const data = await res.json()
@@ -93,7 +89,7 @@ export default function TutorDashboardPage() {
       const fetchUpcomingSessions = async () => {
         try {
           const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&status=CONFIRMED&status=PENDING&upcoming=true`, {
-            headers: { Authorization: `Bearer ${apiToken}` },
+            credentials: "include",
           })
           if (!res.ok) throw new Error("Error al cargar próximas sesiones")
           const data = await res.json()
@@ -111,33 +107,30 @@ export default function TutorDashboardPage() {
           console.error("Failed to fetch upcoming sessions:", error)
         }
       }
-      
+
       const fetchAvailability = async () => {
         if (currentUserProfile?.tutorProfile?.availability) {
-           // Ensure av.id is correctly populated from the backend now
-           setAvailabilityData(currentUserProfile.tutorProfile.availability.map((av: any) => ({
-            id: av.id, // Use the unique ID from the backend
-            day: av.day_of_week, // Keep original day for display if needed, or map it
+          setAvailabilityData(currentUserProfile.tutorProfile.availability.map((av: any) => ({
+            id: av.id,
+            day: av.day_of_week,
             startTime: av.start_time,
             endTime: av.end_time,
-            status: "available", // This status seems to be frontend-only for now
-          })));
+            status: "available",
+          })))
         }
-      };
-
+      }
 
       Promise.all([fetchMyTutorings(), fetchUpcomingSessions(), fetchAvailability()]).finally(() => setLoadingData(false))
-    } else if (!authLoading && (!currentUserProfile || !apiToken)) {
-      setLoadingData(false);
+    } else if (!authLoading && !currentUserProfile) {
+      setLoadingData(false)
     }
-  }, [currentUserProfile, apiToken, authLoading])
-
+  }, [currentUserProfile, authLoading])
 
   if (authLoading || loadingData || !currentUserProfile) {
     return <div className="container flex h-screen items-center justify-center">Cargando dashboard...</div>
   }
-  
-  const tutorName = currentUserProfile?.user?.full_name || "Tutor";
+
+  const tutorName = currentUserProfile?.user?.full_name || "Tutor"
 
 
   return (
