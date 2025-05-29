@@ -92,29 +92,33 @@ export default function TutorPublicProfilePage() {
   useEffect(() => {
     if (params.tutorId) {
       const fetchTutorProfile = async () => {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
         try {
-          // TODO: Adjust the API endpoint as necessary.
-          // This assumes an endpoint like /api/tutors/:tutorId or directly to backend /profile/tutor/:tutorId
-          const response = await fetch(`http://localhost:3000/profile/tutor/${params.tutorId}`)
+          const response = await fetch(`http://localhost:3000/profile/tutor/${params.tutorId}`, {
+            credentials: "include",
+          });
+  
           if (!response.ok) {
             if (response.status === 404) {
-              throw new Error("Perfil de tutor no encontrado.")
+              throw new Error("Perfil de tutor no encontrado.");
             }
-            throw new Error("Error al obtener el perfil del tutor.")
+            throw new Error("Error al obtener el perfil del tutor.");
           }
-          const data = await response.json()
-          setTutorProfile(data)
+  
+          const data = await response.json();
+          setTutorProfile(data);
         } catch (err: any) {
-          setError(err.message)
+          setError(err.message || "Error desconocido al obtener el perfil.");
         } finally {
-          setLoading(false)
+          setLoading(false);
         }
-      }
-      fetchTutorProfile()
+      };
+  
+      fetchTutorProfile();
     }
-  }, [params.tutorId])
+  }, [params.tutorId]);
+  
 
   const formatAcademicYear = (year?: string | null): string => {
     if (!year) return "Año no especificado";

@@ -73,16 +73,6 @@ export default function ConvertToTutorPage() {
     }
     // Ya no se valida la existencia de cursos
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setSubmitError(
-        "No estás autenticado. Por favor, inicia sesión de nuevo."
-      );
-      setIsLoading(false);
-      router.push("/login"); // Ajusta tu ruta de login
-      return;
-    }
-
     // El payload ahora siempre enviará un array de cursos vacío
     const payload = {
       ...formData, // Solo contendrá 'bio' y otros campos directos si los añades
@@ -99,10 +89,12 @@ export default function ConvertToTutorPage() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
+      
+      
 
       const responseData = await response.json();
 
