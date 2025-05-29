@@ -317,22 +317,24 @@ export default function TutorDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
-                    {availabilityData.length > 0 ? sortedAvailability.map((slot) => (
-                      <div key={slot.id} className="flex items-center justify-between rounded-lg border p-3">
-                        <div>
-                          <p className="font-medium">{slot.day}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {slot.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                            {slot.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                         </div>
-                        <Badge variant={slot.status === "available" ? "outline" : "secondary"}>
-                          {slot.status === "available" ? "Disponible" : "Reservado"}
-                        </Badge>
-                      </div>
-                    )) : <p className="text-muted-foreground">No has configurado tu disponibilidad.</p>}
+                    {availabilityData.length > 0 ? (
+                      availabilityData.map((slot) => (
+                        <div key={slot.id} className="flex items-center justify-between rounded-lg border p-3">
+                          <div>
+                            <p className="font-medium">{slot.day}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                              {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <Badge variant={slot.status === "available" ? "outline" : "secondary"}>
+                            {slot.status === "available" ? "Disponible" : "Reservado"}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : null}
                   </div>
-                </CardContent>
+                </CardContent>              
                 <CardFooter className="flex justify-end">
                   <Link href="/availability/tutor">
                     <Button className="bg-sky-600 hover:bg-sky-700 text-white">
@@ -340,10 +342,9 @@ export default function TutorDashboardPage() {
                     </Button>
                   </Link>
                 </CardFooter>
-             </Card>
-            </TabsContent>
-          </Tabs>
-
+              </Card>
+            </TabsContent>  
+          </Tabs>         
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
