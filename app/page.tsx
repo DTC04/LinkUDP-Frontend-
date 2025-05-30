@@ -22,18 +22,6 @@ export default function Home() {
           </span>
           <nav className="ml-auto flex gap-4 sm:gap-6">
             <Link
-              href="/tutoring"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Explorar
-            </Link>
-            <Link
-              href="/calendar"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Calendario
-            </Link>
-            <Link
               href="/login"
               className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
