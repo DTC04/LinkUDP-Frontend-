@@ -43,7 +43,7 @@ export default function CreateTutoringPage() {
   } = useAuth();
   const [currentUserProfile, setCurrentUserProfile] =
     useState<UserProfile | null>(null);
-  const [apiToken, setApiToken] = useState<string | null>(null);
+  // const [apiToken, setApiToken] = useState<string | null>(null); // Eliminado
   const [coursesList, setCoursesList] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
@@ -59,13 +59,13 @@ export default function CreateTutoringPage() {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      // Fetch profile and token
+      // Fetch profile
       const profile = await getCurrentUserProfile();
       setCurrentUserProfile(profile);
-      const storedToken = localStorage.getItem("token");
-      setApiToken(storedToken);
+      // const storedToken = localStorage.getItem("token"); // Eliminado
+      // setApiToken(storedToken); // Eliminado
 
-      if (!profile || !storedToken) {
+      if (!profile || !profile.user) { // Verificamos profile y profile.user
         toast({
           title: "Autenticación requerida",
           description: "Por favor, inicia sesión para crear una tutoría.",
@@ -78,13 +78,14 @@ export default function CreateTutoringPage() {
       // Fetch courses
       try {
         setLoadingCourses(true);
-        const coursesResponse = await fetch("http://localhost:3000/courses", { // Assuming this endpoint
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
+        // Aseguramos que se envíen las credenciales para obtener los cursos
+        const coursesResponse = await fetch("http://localhost:3000/courses", {
+          credentials: "include", // Agregado para enviar cookies de sesión
         });
         if (!coursesResponse.ok) {
-          throw new Error("Error al cargar la lista de cursos");
+          const errorBody = await coursesResponse.text();
+          console.error("Error response body from /courses:", errorBody);
+          throw new Error(`Error al cargar la lista de cursos. Status: ${coursesResponse.status}`);
         }
         const coursesData: Course[] = await coursesResponse.json();
         setCoursesList(coursesData);
@@ -116,11 +117,11 @@ export default function CreateTutoringPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUserProfile || !currentUserProfile.user || !apiToken) {
+    if (!currentUserProfile || !currentUserProfile.user) { // Eliminada la comprobación de apiToken
       toast({
         title: "Error de autenticación",
         description:
-          "No se pudo obtener la información del usuario o el token. Por favor, reintenta iniciar sesión.",
+          "No se pudo obtener la información del usuario. Por favor, reintenta iniciar sesión.",
         variant: "destructive",
       });
       router.push("/login");
@@ -192,8 +193,9 @@ export default function CreateTutoringPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiToken}`,
+          // Authorization: `Bearer ${apiToken}`, // Eliminado, confiamos en cookies via credentials: "include"
         },
+        credentials: "include", // Aseguramos que las cookies se envíen
         body: JSON.stringify(tutoriaData),
       });
 
@@ -236,17 +238,49 @@ export default function CreateTutoringPage() {
   }
 
   return (
-    <div className="container py-10">
-      <div className="mb-6 flex items-center">
-        <Link href="/dashboard/tutor" className="mr-4">
-          <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold text-sky-700">Crear Nueva Tutoría</h1>
-      </div>
+    <div className="flex min-h-screen flex-col"> {/* Envoltura principal */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
+          <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link
+              href="/tutoring"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Explorar
+            </Link>
+            <Link
+              href="/calendar"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Calendario
+            </Link>
+            <Link
+              href="/dashboard/tutor" // Asumiendo que esta página es para tutores
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Mi Dashboard
+            </Link>
+            <Link
+              href="/profile/tutor" // Asumiendo que esta página es para tutores
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Mi Perfil
+            </Link>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1 container py-10"> {/* Contenido principal */}
+        <div className="mb-6 flex items-center">
+          <Link href="/dashboard/tutor" className="mr-4">
+            <Button variant="ghost" size="icon">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-sky-700">Crear Nueva Tutoría</h1>
+        </div>
 
-      <Card className="mx-auto max-w-2xl">
+        <Card className="mx-auto max-w-2xl">
         <CardHeader>
           <CardTitle>Detalles de la Tutoría</CardTitle>
           <CardDescription>
@@ -361,13 +395,21 @@ export default function CreateTutoringPage() {
             <Button
               type="submit"
               className="bg-sky-600 hover:bg-sky-700"
-              disabled={authLoading || !currentUserProfile || !apiToken}
+              disabled={authLoading || !currentUserProfile } // Eliminada la comprobación de apiToken
             >
               Crear Tutoría
             </Button>
           </CardFooter>
         </form>
       </Card>
+      </main> {/* Cierre de <main> */}
+      <footer className="border-t py-6 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
+          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+            © 2025 LINKUDP. Todos los derechos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
