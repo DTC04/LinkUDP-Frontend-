@@ -330,29 +330,32 @@ export default function CalendarPage() {
         {/* Dialog para detalles de tutoría/evento */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
-            <DialogHeader>
-              <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle> {/* Usar selectedEvent.title */}
-              <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
-            </DialogHeader>
-            {selectedEvent && (
-              <div className="space-y-3">
-                <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
-                <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
-                <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
-                <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
-                {/* Aquí podrías añadir un enlace a la página de detalles de la tutoría si existe */}
-                <Link href={`/tutoring/${selectedEvent.id}`} passHref>
-                   <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
-                </Link>
+            <div className="flex items-start gap-3">
+              <CalendarIcon className="h-5 w-5 text-sky-600 mt-1" />
+              <div className="flex-1 space-y-3">
+                <DialogHeader>
+                  <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle>
+                  <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
+                </DialogHeader>
+
+                {selectedEvent && (
+                  <div className="space-y-3">
+                    <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
+                    <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
+                    <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
+                    <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
+                    <Link href={`/tutoring/${selectedEvent.id}`} passHref>
+                      <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
+                    </Link>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                 Cerrar
               </Button>
-              {/* <Button size="sm" variant="default" className="w-full sm:w-auto">
-                Ver Más
-              </Button> */}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -507,33 +510,39 @@ export default function CalendarPage() {
       </motion.div>
     </motion.div>
 
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+       {/* Cuadro de dialogo */}     
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
-          <DialogHeader>
-            <DialogTitle>{selectedEvent?.title || "Detalle de Tutoría"}</DialogTitle> {/* Usar selectedEvent.title */}
-            <DialogDescription>Información detallada de la tutoría seleccionada.</DialogDescription>
-          </DialogHeader>
-          {selectedEvent && (
-            <div className="space-y-4">
-              <p><strong>Curso:</strong> {selectedEvent?.courseName || "No especificado"}</p>
-              <p><strong>Tutor:</strong> {selectedEvent?.tutorName || "No especificado"}</p>
-              <p><strong>Fecha:</strong> {selectedEvent ? formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy") : "N/A"}</p>
-              <p><strong>Hora:</strong> {selectedEvent?.start_time} - {selectedEvent?.end_time}</p>
-               {selectedEvent && (
-                <Link href={`/tutoring/${selectedEvent.id}`} passHref>
-                   <Button variant="link" size="sm" className="p-0 h-auto text-sky-600">Ver detalles completos de la tutoría</Button>
-                </Link>
-               )}
+          <div className="flex items-start gap-3">
+            <CalendarIcon className="h-5 w-5 text-sky-600 mt-1" />
+            <div className="flex-1 space-y-3">
+              <DialogHeader>
+                <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle>
+                <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
+              </DialogHeader>
+
+              {selectedEvent && (
+                <div className="space-y-3">
+                  <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
+                  <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
+                  <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
+                  <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
+                  <Link href={`/tutoring/${selectedEvent.id}`} passHref>
+                    <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          </div>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
               Cerrar
             </Button>
-            {/* <Button variant="default">Unirse/Modificar</Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </motion.div>
       </main> {/* Fin del contenido principal del calendario */}
       <footer className="border-t py-6 md:py-0">
