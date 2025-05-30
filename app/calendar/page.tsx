@@ -329,7 +329,7 @@ export default function CalendarPage() {
 
         {/* Dialog para detalles de tutoría/evento */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="w-[95vw] max-w-md">
+          <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
             <DialogHeader>
               <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle> {/* Usar selectedEvent.title */}
               <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
@@ -508,7 +508,7 @@ export default function CalendarPage() {
     </motion.div>
 
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title || "Detalle de Tutoría"}</DialogTitle> {/* Usar selectedEvent.title */}
             <DialogDescription>Información detallada de la tutoría seleccionada.</DialogDescription>
