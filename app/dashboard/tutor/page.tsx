@@ -142,6 +142,9 @@ export default function TutorDashboardPage() {
             <Link href="/tutoring" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Explorar
             </Link>
+            <Link href="/calendar" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Calendario
+            </Link>
             <Link href="/dashboard/tutor" className="text-sm font-medium text-foreground">
               Mi Dashboard
             </Link>

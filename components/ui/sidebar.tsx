@@ -4,6 +4,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { usePathname } from "next/navigation" // Added import
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -488,13 +489,15 @@ SidebarGroupContent.displayName = "SidebarGroupContent"
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
   React.ComponentProps<"ul">
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <ul
     ref={ref}
     data-sidebar="menu"
     className={cn("flex w-full min-w-0 flex-col gap-1", className)}
     {...props}
-  />
+  >
+    {children}
+  </ul>
 ))
 SidebarMenu.displayName = "SidebarMenu"
 
@@ -537,60 +540,83 @@ const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
     asChild?: boolean
-    isActive?: boolean
+    isActive?: boolean // Keep as optional override
+    href?: string      // For internal calculation if isActive is not provided
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
     {
       asChild = false,
-      isActive = false,
+      isActive: isActiveProp, // Renamed to avoid conflict
+      href,
       variant = "default",
       size = "default",
       tooltip,
       className,
+      children,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
+    const currentPathname = usePathname()
 
-    const button = (
+    let finalIsActive = isActiveProp
+    // Calculate isActive if not provided and href is available
+    if (typeof finalIsActive !== 'boolean' && href && currentPathname) {
+      if (href === "/explorar") {
+        finalIsActive = currentPathname === "/explorar"
+      } else if (href === "/dashboard/student" || href === "/dashboard/tutor") {
+        // This logic assumes href might be /dashboard/student for the "Mi Dashboard" item
+        // which should be active for both /dashboard/student and /dashboard/tutor
+        finalIsActive = currentPathname === "/dashboard/student" || currentPathname === "/dashboard/tutor"
+      } else if (href === "/calendar") {
+        finalIsActive = currentPathname.startsWith("/calendar")
+      } else if (href === "/profile") {
+        finalIsActive = currentPathname.startsWith("/profile")
+      } else {
+        // Default to exact match for other hrefs
+        finalIsActive = currentPathname === href
+      }
+    }
+    // Ensure finalIsActive is a boolean
+    finalIsActive = !!finalIsActive;
+  
+    const buttonContent = (
       <Comp
         ref={ref}
         data-sidebar="menu-button"
         data-size={size}
-        data-active={isActive}
+        data-active={finalIsActive} // Use the determined active state
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
-      />
+      >
+        {children}
+      </Comp>
     )
-
+  
     if (!tooltip) {
-      return button
+      return buttonContent
     }
-
-    if (typeof tooltip === "string") {
-      tooltip = {
-        children: tooltip,
-      }
-    }
-
+  
+    const tooltipProps = typeof tooltip === "string" ? { children: tooltip } : tooltip;
+  
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
           hidden={state !== "collapsed" || isMobile}
-          {...tooltip}
+          {...tooltipProps}
         />
       </Tooltip>
     )
   }
-)
-SidebarMenuButton.displayName = "SidebarMenuButton"
+  )
+  SidebarMenuButton.displayName = "SidebarMenuButton"
 
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,

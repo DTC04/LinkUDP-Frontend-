@@ -5,10 +5,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Filter, Plus } from "lucide-react"
-import { useEffect, useState, useCallback } from "react" 
-import { jwtDecode } from "jwt-decode"
-import { useAuth } from "@/hooks/use-auth" 
-import type { UserProfile as AuthUserProfile } from "@/hooks/use-auth" 
+import { useEffect, useState, useCallback } from "react"
+// import { jwtDecode } from "jwt-decode"; // Eliminado
+import { useAuth } from "@/hooks/use-auth"
+import type { UserProfile as AuthUserProfile } from "@/hooks/use-auth"
 
 
 interface UserProfile { 
@@ -55,26 +55,16 @@ export default function TutoringListPage() {
 
   const fetchProfileAndSetLoginStatus = useCallback(async () => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          jwtDecode(token); 
-          setIsLoggedIn(true);
-          const profile = await getCurrentUserProfile();
-          setLoggedInUserProfile(profile); 
-          if (!profile) { 
-            setIsLoggedIn(false);
-            localStorage.removeItem("token");
-          }
-        } catch (e) {
-          console.error("Token decoding failed or profile fetch failed:", e);
-          setIsLoggedIn(false);
-          localStorage.removeItem("token"); 
-          setLoggedInUserProfile(null); 
-        }
+      const profile = await getCurrentUserProfile();
+      if (profile && profile.user) {
+        setIsLoggedIn(true);
+        setLoggedInUserProfile(profile);
       } else {
         setIsLoggedIn(false);
-        setLoggedInUserProfile(null); 
+        setLoggedInUserProfile(null);
+        // No es necesario remover el token de localStorage aquí,
+        // ya que no lo estamos usando para determinar el estado de login.
+        // El logout a través de useAuth debería manejar la invalidación de la cookie.
       }
     }
   }, [getCurrentUserProfile]);
@@ -142,10 +132,16 @@ export default function TutoringListPage() {
                   href="/tutoring"
                   className="text-sm font-medium text-foreground border-b-2 border-sky-600 pb-1"
                 >
-                  Buscar Tutorías
+                  Explorar
                 </Link>
                 <Link
-                  href={dashboardUrl} 
+                  href="/calendar"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Calendario
+                </Link>
+                <Link
+                  href={dashboardUrl}
                   className="text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
                   Mi Dashboard
