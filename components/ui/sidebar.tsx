@@ -489,16 +489,52 @@ SidebarGroupContent.displayName = "SidebarGroupContent"
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
   React.ComponentProps<"ul">
->(({ className, children, ...props }, ref) => (
-  <ul
-    ref={ref}
-    data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
-    {...props}
-  >
-    {children}
-  </ul>
-))
+>(({ className, children, ...props }, ref) => {
+  const pathname = usePathname();
+
+  const filteredChildren = React.Children.toArray(children).filter(child => {
+    if (pathname === "/") {
+      if (React.isValidElement(child) && child.props.children) {
+        // Attempt to find the SidebarMenuButton and its href prop
+        let buttonHref: string | undefined = undefined;
+        const childElements = React.Children.toArray(child.props.children);
+
+        for (const element of childElements) {
+          // Check if the element is a SidebarMenuButton by its displayName
+          if (React.isValidElement(element) && typeof element.type !== 'string' && (element.type as any).displayName === "SidebarMenuButton") {
+            // 'element' is SidebarMenuButton (or Slot rendering it)
+            // The href prop should be directly on the SidebarMenuButton's props
+            // or on its direct child if asChild is used with a Link component.
+            if (element.props.href) {
+              buttonHref = element.props.href;
+              break;
+            } else if (element.props.asChild && React.isValidElement(element.props.children) && element.props.children.props.href) {
+              // Handles <SidebarMenuButton asChild><Link href="..">...</SidebarMenuButton>
+              buttonHref = element.props.children.props.href;
+              break;
+            }
+          }
+        }
+
+        if (buttonHref === "/explorar" || buttonHref === "/calendar") {
+          return false; // Hide on the homepage
+        }
+      }
+    }
+    return true; // Show on other pages or if no match
+  });
+
+  return (
+    <ul
+      ref={ref}
+      data-sidebar="menu"
+      className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+      {...props}
+    >
+      {filteredChildren}
+    </ul>
+  );
+})
 SidebarMenu.displayName = "SidebarMenu"
 
 const SidebarMenuItem = React.forwardRef<
