@@ -118,7 +118,8 @@
 	            }
 
 	            try {
-	              const historyRes = await fetch(`http://localhost:3000/bookings/me?status=COMPLETED&status=CANCELLED&past=true`, { 
+	              // Fetch past confirmed and cancelled bookings for history
+	              const historyRes = await fetch(`http://localhost:3000/bookings/me?status=CONFIRMED&status=CANCELLED&past=true`, { 
 	                credentials: "include",
 	              });
 	              if (!historyRes.ok) throw new Error('Error al cargar historial de tutorías');
@@ -403,9 +404,10 @@
 		            <Card key={booking.id} className="overflow-hidden">
 		              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 		                <CardTitle className="text-base font-medium">{booking.title}</CardTitle>
-		                <Badge variant={booking.status === "COMPLETED" ? "default" : "destructive"} 
-		                       className={booking.status === "COMPLETED" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-		                  {booking.status === "COMPLETED" ? "Completada" : "Cancelada"}
+		                {/* Adjust badge logic: if status is CONFIRMED (and it's in history, so past=true), it's "Completada" */}
+		                <Badge variant={booking.status === "CONFIRMED" ? "default" : "destructive"} 
+		                       className={booking.status === "CONFIRMED" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+		                  {booking.status === "CONFIRMED" ? "Completada" : "Cancelada"}
 		                </Badge>
 		              </CardHeader>
 		              <CardContent>
