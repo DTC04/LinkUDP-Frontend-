@@ -64,7 +64,9 @@ export default function TutorDashboardPage() {
 
       const fetchMyTutorings = async () => {
         try {
-          const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}`, {
+          // Fetch all relevant statuses for "Mis Tutorías"
+          const statusesToFetch = ["AVAILABLE", "PENDING", "CONFIRMED", "CANCELLED"].map(s => `status=${s}`).join('&');
+          const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&${statusesToFetch}`, {
             credentials: "include",
           })
           if (!res.ok) throw new Error("Error al cargar mis tutorías")
