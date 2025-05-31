@@ -16,6 +16,7 @@ import {
 import { CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import Link from "next/link"
 import { format as formatDateFns } from "date-fns"
+import { useRouter } from "next/navigation"; // Importar useRouter
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { useAuth, type UserProfile as AuthUserProfile } from "@/hooks/use-auth" // Importar useAuth
@@ -36,6 +37,7 @@ interface TutoriaEvent {
 export default function CalendarPage() {
   const isMobile = useIsMobile();
   const { getCurrentUserProfile, loading: authLoading } = useAuth(); // Usar useAuth
+  const router = useRouter(); // Inicializar useRouter
   const [currentUserProfile, setCurrentUserProfile] = useState<AuthUserProfile | null>(null);
   const [dashboardUrl, setDashboardUrl] = useState("/login"); // Estado para URL dinámica
   const [profileUrl, setProfileUrl] = useState("/login"); // Estado para URL dinámica
@@ -70,23 +72,67 @@ export default function CalendarPage() {
       // Cargar tutorías
       setLoadingTutorias(true);
       try {
-        const response = await fetch("http://localhost:3000/tutorias"); // Asumiendo endpoint
+        let endpoint = "http://localhost:3000/tutorias"; // Default endpoint
+        let isStudentView = false;
+
+        if (profile?.user && (profile.user.role === "STUDENT" || profile.user.role === "BOTH")) {
+          // Fetch only PENDING or CONFIRMED bookings for the student's calendar
+          endpoint = "http://localhost:3000/bookings/me?status=PENDING&status=CONFIRMED";
+          isStudentView = true;
+        }
+        
+        // Retrieve token for authenticated requests - assuming useAuth or a wrapper handles this
+        // For simplicity, directly fetching. In a real app, use a service or context for API calls.
+        const token = localStorage.getItem('token'); // Or however token is stored
+
+        const response = await fetch(endpoint, {
+          credentials: 'include', // Crucial for sending cookies
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+
         if (!response.ok) {
-          throw new Error("Error al cargar las tutorías");
+          if (response.status === 401) {
+            // Token might be invalid, expired, or not present
+            console.error("Error de autenticación (401) al cargar tutorías. Redirigiendo a login.");
+            localStorage.removeItem('token'); // Simple way to clear token
+            router.push("/login"); // Use router here
+            setLoadingTutorias(false);
+            return; // Stop further execution
+          }
+          // For other errors, throw to be caught by the catch block
+          throw new Error(`Error al cargar las tutorías: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        const formattedTutorias: TutoriaEvent[] = data.map((tutoria: any) => ({
-          id: tutoria.id,
-          title: tutoria.title,
-          date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"), // Asegurar formato YYYY-MM-DD
-          start_time: formatDateFns(new Date(tutoria.start_time), "HH:mm"),
-          end_time: formatDateFns(new Date(tutoria.end_time), "HH:mm"),
-          courseName: tutoria.course?.name,
-          tutorName: tutoria.tutor?.user?.full_name,
-        }));
+
+        let formattedTutorias: TutoriaEvent[] = [];
+        if (isStudentView) {
+          // Data is an array of Booking objects
+          formattedTutorias = data.map((booking: any) => ({
+            id: booking.session.id,
+            title: booking.session.title,
+            date: formatDateFns(new Date(booking.session.date), "yyyy-MM-dd"),
+            start_time: formatDateFns(new Date(booking.session.start_time), "HH:mm"),
+            end_time: formatDateFns(new Date(booking.session.end_time), "HH:mm"),
+            courseName: booking.session.course?.name,
+            tutorName: booking.session.tutor?.user?.full_name,
+            // Consider adding booking status if relevant for display
+          }));
+        } else {
+          // Data is an array of TutoringSession objects (public view)
+          formattedTutorias = data.map((tutoria: any) => ({
+            id: tutoria.id,
+            title: tutoria.title,
+            date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"),
+            start_time: formatDateFns(new Date(tutoria.start_time), "HH:mm"),
+            end_time: formatDateFns(new Date(tutoria.end_time), "HH:mm"),
+            courseName: tutoria.course?.name,
+            tutorName: tutoria.tutor?.user?.full_name,
+          }));
+        }
         setAllTutorias(formattedTutorias);
       } catch (error) {
         console.error("Error fetching tutorias:", error);
+        setAllTutorias([]); // Clear tutorias on error
         // Aquí podrías mostrar un toast o mensaje de error
       } finally {
         setLoadingTutorias(false);
