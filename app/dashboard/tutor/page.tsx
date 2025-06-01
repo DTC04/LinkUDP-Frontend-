@@ -1,83 +1,103 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, MapPin, Plus, Users } from "lucide-react"
-import { useAuth, type UserProfile } from "../../../hooks/use-auth"
-import { toast } from "@/components/ui/use-toast"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, MapPin, Plus, Users, Edit, Trash2 } from "lucide-react"; // Added Edit and Trash2
+import { useAuth, type UserProfile } from "../../../hooks/use-auth";
+import { toast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"; // Added AlertDialog components
 
 interface Session {
-  id: string | number
-  title: string
-  area: string
-  student?: string
-  date: string
-  time: string
-  location: string
-  description?: string
-  students?: number
-  status?: string
-  course?: { name: string }
-  tutor?: { user?: { full_name?: string } }
-  studentProfile?: { user?: { full_name?: string } }
-  start_time?: string | Date
-  end_time?: string | Date
-  bookingId?: number // ID del booking asociado
+  id: string | number;
+  title: string;
+  area: string;
+  student?: string;
+  date: string;
+  time: string;
+  location: string;
+  description?: string;
+  students?: number;
+  status?: string;
+  course?: { name: string };
+  tutor?: { user?: { full_name?: string } };
+  studentProfile?: { user?: { full_name?: string } };
+  start_time?: string | Date;
+  end_time?: string | Date;
+  bookingId?: number; // ID del booking asociado
 }
 
 export default function TutorDashboardPage() {
-  const router = useRouter()
-  const { getCurrentUserProfile, loading: authLoading } = useAuth()
-  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null)
+  const router = useRouter();
+  const { getCurrentUserProfile, loading: authLoading } = useAuth();
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
-  const [upcomingSessionsData, setUpcomingSessionsData] = useState<Session[]>([])
-  const [myTutoringsData, setMyTutoringsData] = useState<Session[]>([])
-  const [availabilityData, setAvailabilityData] = useState<any[]>([])
-  const [loadingData, setLoadingData] = useState(true)
-  const [solicitudesData, setSolicitudesData] = useState<Session[]>([])
-  const [accionEnCurso, setAccionEnCurso] = useState<string | null>(null)
+  const [upcomingSessionsData, setUpcomingSessionsData] = useState<Session[]>([]);
+  const [myTutoringsData, setMyTutoringsData] = useState<Session[]>([]);
+  const [availabilityData, setAvailabilityData] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [solicitudesData, setSolicitudesData] = useState<Session[]>([]);
+  const [accionEnCurso, setAccionEnCurso] = useState<string | null>(null);
+  const [deletingTutoringId, setDeletingTutoringId] = useState<string | number | null>(null);
 
-  const fetchSolicitudesRef = useRef<() => Promise<void>>()
-  const fetchUpcomingSessionsRef = useRef<() => Promise<void>>()
-  const fetchMyTutoringsRef = useRef<() => Promise<void>>()
+
+  const fetchSolicitudesRef = useRef<() => Promise<void>>();
+  const fetchUpcomingSessionsRef = useRef<() => Promise<void>>();
+  const fetchMyTutoringsRef = useRef<() => Promise<void>>();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const profile = await getCurrentUserProfile()
-      setCurrentUserProfile(profile)
+      const profile = await getCurrentUserProfile();
+      setCurrentUserProfile(profile);
 
       if (!profile) {
         toast({
           title: "Autenticación requerida",
           description: "Por favor, inicia sesión para ver tu dashboard.",
           variant: "destructive",
-        })
-        router.push("/login")
+        });
+        router.push("/login");
       }
-    }
-    fetchProfile()
-  }, [getCurrentUserProfile, router])
+    };
+    fetchProfile();
+  }, [getCurrentUserProfile, router]);
 
   useEffect(() => {
     if (currentUserProfile?.tutorProfile?.id) {
-      const tutorId = currentUserProfile.tutorProfile.id
-      setLoadingData(true)
+      const tutorId = currentUserProfile.tutorProfile.id;
+      setLoadingData(true);
 
       const fetchMyTutorings = async () => {
         try {
           // Fetch all relevant statuses for "Mis Tutorías"
-          const statusesToFetch = ["AVAILABLE", "PENDING", "CONFIRMED", "CANCELLED"].map((s) => `status=${s}`).join("&")
+          const statusesToFetch = ["AVAILABLE", "PENDING", "CONFIRMED", "CANCELLED"].map((s) => `status=${s}`).join("&");
           const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&${statusesToFetch}`, {
             credentials: "include",
-          })
-          if (!res.ok) throw new Error("Error al cargar mis tutorías")
-          const data = await res.json()
+          });
+          if (!res.ok) throw new Error("Error al cargar mis tutorías");
+          const data = await res.json();
           setMyTutoringsData(
             data.map((item: any) => ({
               id: item.id,
@@ -90,19 +110,21 @@ export default function TutorDashboardPage() {
               location: item.location || "Online",
               status: item.status,
             })),
-          )
+          );
         } catch (error) {
-          console.error("Failed to fetch my tutorings:", error)
-          toast({ title: "Error", description: (error as Error).message, variant: "destructive" })
+          console.error("Failed to fetch my tutorings:", error);
+          toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
         }
-      }
+      };
+      fetchMyTutoringsRef.current = fetchMyTutorings; // Assign here so it's available for re-fetching
+
       const fetchSolicitudes = async () => {
         try {
           const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&status=PENDING`, {
             credentials: "include",
-          })
-          if (!res.ok) throw new Error("Error al cargar solicitudes")
-          const data = await res.json()
+          });
+          if (!res.ok) throw new Error("Error al cargar solicitudes");
+          const data = await res.json();
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const solicitudes = data
@@ -120,12 +142,12 @@ export default function TutorDashboardPage() {
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               bookingId: item.bookings?.[0]?.id, // Guardamos el ID del booking
-            }))
-          setSolicitudesData(solicitudes)
+            }));
+          setSolicitudesData(solicitudes);
         } catch (error) {
-          console.error("Failed to fetch solicitudes:", error)
+          console.error("Failed to fetch solicitudes:", error);
         }
-      }
+      };
       const fetchUpcomingSessions = async () => {
         try {
           const res = await fetch(
@@ -133,9 +155,9 @@ export default function TutorDashboardPage() {
             {
               credentials: "include",
             },
-          )
-          if (!res.ok) throw new Error("Error al cargar próximas sesiones")
-          const data = await res.json()
+          );
+          if (!res.ok) throw new Error("Error al cargar próximas sesiones");
+          const data = await res.json();
           const upcoming = data.map((item: any) => ({
             id: item.id,
             title: item.title,
@@ -144,12 +166,12 @@ export default function TutorDashboardPage() {
             date: new Date(item.date).toLocaleDateString(),
             time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
             location: item.location || "Online",
-          }))
-          setUpcomingSessionsData(upcoming)
+          }));
+          setUpcomingSessionsData(upcoming);
         } catch (error) {
-          console.error("Failed to fetch upcoming sessions:", error)
+          console.error("Failed to fetch upcoming sessions:", error);
         }
-      }
+      };
 
       const fetchAvailability = async () => {
         if (currentUserProfile?.tutorProfile?.availability) {
@@ -161,31 +183,31 @@ export default function TutorDashboardPage() {
               endTime: av.end_time,
               status: "available",
             })),
-          )
+          );
         }
-      }
+      };
 
-      fetchSolicitudesRef.current = fetchSolicitudes
-      fetchUpcomingSessionsRef.current = fetchUpcomingSessions
-      fetchMyTutoringsRef.current = fetchMyTutorings
+      fetchSolicitudesRef.current = fetchSolicitudes;
+      fetchUpcomingSessionsRef.current = fetchUpcomingSessions;
+      // fetchMyTutoringsRef.current is already assigned above
 
       Promise.all([fetchMyTutorings(), fetchUpcomingSessions(), fetchAvailability(), fetchSolicitudes()]).finally(() =>
         setLoadingData(false),
-      )
+      );
     } else if (!authLoading && !currentUserProfile) {
-      setLoadingData(false)
+      setLoadingData(false);
     }
-  }, [currentUserProfile, authLoading])
+  }, [currentUserProfile, authLoading]);
 
   if (authLoading || loadingData || !currentUserProfile) {
-    return <div className="container flex h-screen items-center justify-center">Cargando dashboard...</div>
+    return <div className="container flex h-screen items-center justify-center">Cargando dashboard...</div>;
   }
 
-  const tutorName = currentUserProfile?.user?.full_name || "Tutor"
+  const tutorName = currentUserProfile?.user?.full_name || "Tutor";
 
   // Función para aceptar solicitud (confirma el booking)
   const handleAceptarSolicitud = async (solicitudId: string | number) => {
-    setAccionEnCurso(`aceptar-${solicitudId}`)
+    setAccionEnCurso(`aceptar-${solicitudId}`);
     try {
       // Llamar al endpoint de confirmación de la tutoría por sessionId
       const response = await fetch(`http://localhost:3000/bookings/session/${solicitudId}/confirm`, {
@@ -194,17 +216,17 @@ export default function TutorDashboardPage() {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      });
 
       if (!response.ok) {
-        let errorMsg = "No se pudo confirmar la solicitud"
+        let errorMsg = "No se pudo confirmar la solicitud";
         try {
-          const errorData = await response.json()
-          errorMsg = errorData.message || errorMsg
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
         } catch {
-          errorMsg = `Error ${response.status}: ${response.statusText}`
+          errorMsg = `Error ${response.status}: ${response.statusText}`;
         }
-        throw new Error(errorMsg)
+        throw new Error(errorMsg);
       }
 
       // Actualizar las listas después del cambio
@@ -212,28 +234,28 @@ export default function TutorDashboardPage() {
         typeof fetchSolicitudesRef.current === "function" ? fetchSolicitudesRef.current() : null,
         typeof fetchUpcomingSessionsRef.current === "function" ? fetchUpcomingSessionsRef.current() : null,
         typeof fetchMyTutoringsRef.current === "function" ? fetchMyTutoringsRef.current() : null,
-      ])
+      ]);
 
       toast({
         title: "Tutoría confirmada",
         description: "La solicitud ha sido aceptada exitosamente.",
         variant: "default",
-      })
+      });
     } catch (error) {
-      console.error("Error al aceptar solicitud:", error)
+      console.error("Error al aceptar solicitud:", error);
       toast({
         title: "Error",
         description: (error as Error).message,
         variant: "destructive",
-      })
+      });
     } finally {
-      setAccionEnCurso(null)
+      setAccionEnCurso(null);
     }
-  }
+  };
 
   // Función para rechazar solicitud (cancela el booking)
   const handleRechazarSolicitud = async (solicitudId: string | number) => {
-    setAccionEnCurso(`rechazar-${solicitudId}`)
+    setAccionEnCurso(`rechazar-${solicitudId}`);
     try {
       // Llamar al endpoint de cancelación de la tutoría por sessionId
       const response = await fetch(`http://localhost:3000/bookings/session/${solicitudId}/cancel`, {
@@ -242,17 +264,17 @@ export default function TutorDashboardPage() {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      });
 
       if (response.status !== 204 && !response.ok) {
-        let errorMsg = "No se pudo cancelar la solicitud"
+        let errorMsg = "No se pudo cancelar la solicitud";
         try {
-          const errorData = await response.json()
-          errorMsg = errorData.message || errorMsg
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
         } catch {
-          errorMsg = `Error ${response.status}: ${response.statusText}`
+          errorMsg = `Error ${response.status}: ${response.statusText}`;
         }
-        throw new Error(errorMsg)
+        throw new Error(errorMsg);
       }
 
       // Actualizar las listas después del cambio
@@ -260,24 +282,58 @@ export default function TutorDashboardPage() {
         typeof fetchSolicitudesRef.current === "function" ? fetchSolicitudesRef.current() : null,
         typeof fetchUpcomingSessionsRef.current === "function" ? fetchUpcomingSessionsRef.current() : null,
         typeof fetchMyTutoringsRef.current === "function" ? fetchMyTutoringsRef.current() : null,
-      ])
+      ]);
 
       toast({
         title: "Solicitud rechazada",
         description: "La solicitud ha sido rechazada exitosamente.",
         variant: "default",
-      })
+      });
     } catch (error) {
-      console.error("Error al rechazar solicitud:", error)
+      console.error("Error al rechazar solicitud:", error);
       toast({
         title: "Error",
         description: (error as Error).message,
         variant: "destructive",
-      })
+      });
     } finally {
-      setAccionEnCurso(null)
+      setAccionEnCurso(null);
     }
-  }
+  };
+
+  const handleDeleteTutoring = async (tutoringId: string | number) => {
+    setDeletingTutoringId(tutoringId); // Indicate which tutoring is being deleted for UI feedback
+    try {
+      const response = await fetch(`http://localhost:3000/tutorias/${tutoringId}`, {
+        method: "DELETE",
+        credentials: "include", // Important for sending auth cookies
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
+        throw new Error(errorData.message || "No se pudo eliminar la tutoría.");
+      }
+
+      toast({
+        title: "Tutoría Eliminada",
+        description: "La tutoría ha sido eliminada exitosamente.",
+      });
+      // Re-fetch "Mis Tutorías" to update the list
+      if (fetchMyTutoringsRef.current) {
+        await fetchMyTutoringsRef.current();
+      }
+    } catch (error) {
+      console.error("Error al eliminar la tutoría:", error);
+      toast({
+        title: "Error al Eliminar",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingTutoringId(null);
+    }
+  };
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -360,7 +416,7 @@ export default function TutorDashboardPage() {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" onClick={() => router.push(`/tutoring/${session.id}`)}>
                           Ver detalles
                         </Button>
                       </CardFooter>
@@ -495,12 +551,33 @@ export default function TutorDashboardPage() {
                         </div>
                       </CardContent>
                       <CardFooter className="flex gap-2">
-                        <Button variant="outline" className="w-full">
-                          Editar
+                        <Button variant="outline" className="flex-1" onClick={() => router.push(`/tutoring/${tutoring.id}/edit`)}>
+                          <Edit className="mr-2 h-4 w-4" /> Editar
                         </Button>
-                        <Button variant="outline" className="w-full">
-                          Ver detalles
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" className="flex-1 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700" disabled={deletingTutoringId === tutoring.id}>
+                              {deletingTutoringId === tutoring.id ? (<><Clock className="mr-2 h-4 w-4 animate-spin" /> Eliminando...</>) : (<><Trash2 className="mr-2 h-4 w-4" /> Eliminar</>)}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente la tutoría.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTutoring(tutoring.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Sí, eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardFooter>
                     </Card>
                   ))}
@@ -623,5 +700,5 @@ export default function TutorDashboardPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

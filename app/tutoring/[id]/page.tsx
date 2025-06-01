@@ -25,15 +25,16 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import { useAuth, type UserProfile as AuthUserProfile } from "../../../hooks/use-auth"; // Import useAuth
 
-interface UserProfile {
+interface UserProfile { // This is for the tutor's user profile within Tutoring data
   id: number;
   full_name: string;
   email?: string;
   photo_url?: string;
 }
 
-interface TutorProfile {
+interface TutorProfile { // This is for the tutor's profile within Tutoring data
   id: number;
   user: UserProfile;
   bio?: string;
@@ -67,23 +68,40 @@ interface Tutoring {
 export default function TutoringDetailsPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { getCurrentUserProfile, loading: authLoading } = useAuth(); // useAuth hook
+  const [currentUser, setCurrentUser] = useState<AuthUserProfile | null>(null); // State for logged-in user
+
   const [tutoring, setTutoring] = useState<Tutoring | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Combined loading state
   const [error, setError] = useState<string | null>(null);
-  const [bookingStatus, setBookingStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
+  const [bookingStatus, setBookingStatus] = useState< "idle" | "loading" | "success" | "error" >("idle");
   const [bookingMessage, setBookingMessage] = useState<string | null>(null);
   const [hasBooked, setHasBooked] = useState(false);
   const [currentBookingId, setCurrentBookingId] = useState<number | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Nuevo estado para la autenticación
+  // isAuthenticated will be derived from currentUser
 
   const fetchTutoringDetails = async () => {
     setLoading(true);
     setError(null);
     setHasBooked(false);
     setCurrentBookingId(null);
+
+    // Fetch current user profile (moved from inside useEffect to be accessible)
+    // This might run more often than strictly necessary if called from handlers,
+    // but ensures currentUser state is up-to-date before other logic.
+    // Consider optimizing if this becomes a performance issue.
+    const userProfile = await getCurrentUserProfile();
+    setCurrentUser(userProfile);
+    const authenticated = !!userProfile;
+
+    if (!params.id) {
+      setError("ID de tutoría no especificado.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Fetch tutoring details
       const tutoringResponse = await fetch(
         `http://localhost:3000/tutorias/${params.id}`
       );
@@ -96,38 +114,34 @@ export default function TutoringDetailsPage() {
       const tutoringData = await tutoringResponse.json();
       setTutoring(tutoringData);
 
-      // NO necesitamos obtener el token de localStorage aquí si usamos cookies
-      // En su lugar, haremos una solicitud para verificar si el usuario está autenticado
-      // y adjuntaremos las cookies automáticamente con credentials: 'include'.
-      try {
-        const userBookingsResponse = await fetch(
-          `http://localhost:3000/bookings/me?sessionId=${tutoringData.id}&status=PENDING&status=CONFIRMED`, // tutoringData.id es necesario aquí
-          {
-            credentials: "include", // Esto asegura que las cookies se envíen
-          }
-        );
-
-        if (userBookingsResponse.ok) {
-          setIsAuthenticated(true); // El usuario está autenticado si la llamada a /bookings/me es exitosa
-          const userBookings = await userBookingsResponse.json();
-          const foundBooking = userBookings.find(
-            (booking: any) =>
-              booking.sessionId === tutoringData.id &&
-              (booking.status === "PENDING" || booking.status === "CONFIRMED")
+      // Check booking status if user is authenticated
+      if (authenticated && tutoringData.id) {
+        try {
+          const userBookingsResponse = await fetch(
+            `http://localhost:3000/bookings/me?sessionId=${tutoringData.id}&status=PENDING&status=CONFIRMED`,
+            { credentials: "include" }
           );
-          if (foundBooking) {
-            setHasBooked(true);
-            setCurrentBookingId(foundBooking.id);
+
+          if (userBookingsResponse.ok) {
+            const userBookings = await userBookingsResponse.json();
+            const foundBooking = userBookings.find(
+              (booking: any) =>
+                booking.sessionId === tutoringData.id &&
+                (booking.status === "PENDING" || booking.status === "CONFIRMED")
+            );
+            if (foundBooking) {
+              setHasBooked(true);
+              setCurrentBookingId(foundBooking.id);
+            }
+          } else if (userBookingsResponse.status === 404 && userProfile?.user?.role === 'TUTOR') { // Use userProfile directly
+            // This is expected if a tutor (without a student profile) views the page.
+            // console.log("Tutor viewing session, no student bookings to fetch via /bookings/me for this user.");
+          } else if (userBookingsResponse.status !== 401) { 
+            console.error("Error fetching user bookings:", userBookingsResponse.status, userBookingsResponse.statusText);
           }
-        } else if (userBookingsResponse.status === 401) {
-          setIsAuthenticated(false); // No autenticado si devuelve 401
+        } catch (bookingError) {
+          console.error("Error al procesar el estado de la reserva:", bookingError);
         }
-      } catch (authError) {
-        console.error(
-          "Error al verificar el estado de autenticación:",
-          authError
-        );
-        setIsAuthenticated(false); // Asume no autenticado en caso de error de red o similar
       }
     } catch (err: any) {
       setError(err.message);
@@ -135,12 +149,11 @@ export default function TutoringDetailsPage() {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    if (params.id) {
-      fetchTutoringDetails();
-    }
-  }, [params.id]);
+    fetchTutoringDetails();
+  }, [params.id]); // Removed getCurrentUserProfile from deps as it's called inside fetchTutoringDetails
+
 
   const handleBookTutoring = async () => {
     if (!tutoring) return;
@@ -148,9 +161,7 @@ export default function TutoringDetailsPage() {
     setBookingStatus("loading");
     setBookingMessage(null);
 
-    // No se verifica el token en localStorage aquí, dependemos de la cookie del navegador
-    if (!isAuthenticated) {
-      // Usamos el estado de autenticación
+    if (!currentUser) { // currentUser is now set by fetchTutoringDetails
       setBookingStatus("error");
       setBookingMessage(
         "No estás autenticado. Por favor, inicia sesión para reservar."
@@ -165,9 +176,8 @@ export default function TutoringDetailsPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Ya no se necesita el encabezado Authorization, el navegador envía la cookie
           },
-          credentials: "include", // Crucial para enviar la cookie de autenticación
+          credentials: "include", 
         }
       );
 
@@ -176,7 +186,7 @@ export default function TutoringDetailsPage() {
         setBookingMessage(
           "Tutoría agendada con éxito. Esperando confirmación del tutor."
         );
-        fetchTutoringDetails(); // Re-fetch para actualizar el estado del botón y hasBooked
+        await fetchTutoringDetails(); // Re-fetch para actualizar el estado del botón y hasBooked
       } else {
         const errorData = await response.json();
         setBookingStatus("error");
@@ -184,7 +194,7 @@ export default function TutoringDetailsPage() {
         if (
           errorData.message.includes("Ya tienes una reserva para esta sesión")
         ) {
-          setHasBooked(true); // Asegurarse de que el estado refleje esto
+          setHasBooked(true); 
         }
       }
     } catch (err: any) {
@@ -201,9 +211,7 @@ export default function TutoringDetailsPage() {
     setBookingStatus("loading");
     setBookingMessage(null);
 
-    // No se verifica el token en localStorage aquí
-    if (!isAuthenticated) {
-      // Usamos el estado de autenticación
+    if (!currentUser) { 
       setBookingStatus("error");
       setBookingMessage(
         "No estás autenticado. Por favor, inicia sesión para cancelar."
@@ -218,16 +226,15 @@ export default function TutoringDetailsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            // Ya no se necesita el encabezado Authorization
           },
-          credentials: "include", // Crucial para enviar la cookie de autenticación
+          credentials: "include", 
         }
       );
 
       if (response.status === 204) {
         setBookingStatus("success");
         setBookingMessage("Reserva cancelada exitosamente.");
-        fetchTutoringDetails(); // Re-fetch para actualizar el estado
+        await fetchTutoringDetails(); // Re-fetch para actualizar el estado
       } else {
         const errorData = await response.json();
         setBookingStatus("error");
@@ -284,13 +291,16 @@ export default function TutoringDetailsPage() {
     ).toFixed(1)} hrs`;
 
   const formatAcademicYear = (year?: string | null): string => {
-    if (!year) return "Año no especificado";
-    const yearNum = parseInt(year, 10);
+    if (year === null || year === undefined || year.trim() === "") {
+      return "Año no especificado";
+    }
+    const yearStr = String(year).trim();
+    const yearNum = parseInt(yearStr, 10);
 
-    if (!isNaN(yearNum) && yearNum.toString() === year.trim()) {
+    if (!isNaN(yearNum) && yearNum.toString() === yearStr) {
       return `${yearNum}° año`;
     }
-    return year;
+    return yearStr;
   };
 
   const isAvailableForNewBookings = tutoring.status === "AVAILABLE";
@@ -299,6 +309,10 @@ export default function TutoringDetailsPage() {
     hasBooked &&
     !isPastSession &&
     (tutoring.status === "PENDING" || tutoring.status === "CONFIRMED");
+
+  const profileLink = currentUser?.user?.role === "TUTOR" ? "/profile/tutor" : currentUser?.user?.role === "STUDENT" ? "/profile/student" : "/profile";
+  const dashboardLink = currentUser?.user?.role === "TUTOR" ? "/dashboard/tutor" : "/dashboard/student";
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -322,18 +336,30 @@ export default function TutoringDetailsPage() {
             >
               Calendario
             </Link>
-            <Link
-              href="/dashboard/student"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Mi Dashboard
-            </Link>
-            <Link
-              href="/profile"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Mi Perfil
-            </Link>
+            {currentUser && (
+               <Link
+                href={dashboardLink}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Mi Dashboard
+              </Link>
+            )}
+            {currentUser && (
+              <Link
+                href={profileLink}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Mi Perfil
+              </Link>
+            )}
+            {!currentUser && !authLoading && (
+               <Link
+                href="/login"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Iniciar Sesión
+              </Link>
+            )}
           </nav>
         </div>
       </header>
@@ -475,14 +501,14 @@ export default function TutoringDetailsPage() {
                       !isAvailableForNewBookings ||
                       isPastSession ||
                       bookingStatus === "loading" ||
-                      !isAuthenticated // Deshabilitar si no está autenticado
+                      !currentUser // Deshabilitar si no está autenticado
                     }
                   >
                     {bookingStatus === "loading"
                       ? "Agendando..."
                       : isPastSession
                       ? "Sesión Finalizada"
-                      : !isAuthenticated
+                      : !currentUser
                       ? "Inicia sesión para reservar" // Mensaje para no autenticados
                       : tutoring.status === "PENDING"
                       ? "Reserva Pendiente"
