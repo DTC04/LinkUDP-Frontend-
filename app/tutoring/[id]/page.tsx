@@ -277,11 +277,13 @@ export default function TutoringDetailsPage() {
     );
   }
 
-  const schedule =
-    tutoring.schedule ||
-    `${new Date(tutoring.date).toLocaleDateString()} ${new Date(
-      tutoring.start_time
-    ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  // Consistently derive date and time for display from start_time
+  const startTimeObj = new Date(tutoring.start_time);
+  const scheduleDisplayDate = startTimeObj.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const scheduleDisplayTime = startTimeObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  
+  const schedule = tutoring.schedule || `${scheduleDisplayDate} ${scheduleDisplayTime}`;
+  
   const duration =
     tutoring.duration ||
     `${(

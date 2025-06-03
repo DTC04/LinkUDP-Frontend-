@@ -14,13 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { TimeSelect } from "@/components/ui/time-select"; // Import TimeSelect
 import { ChevronLeft, AlertCircle, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth, type UserProfile } from "../../../../hooks/use-auth"; // Adjusted path
 import { toast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, parse as parseDateFns } from "date-fns"; // Import parse
 import { es } from "date-fns/locale";
 
 interface TutoringSessionData {
@@ -96,16 +97,16 @@ export default function EditTutoringPage() {
         setTutoring(tutoringData);
         // Initialize form data with fetched tutoring data
         // Ensure dates are in 'yyyy-MM-dd' and times in 'HH:mm' for input[type=date/time]
-        const sessionDate = new Date(tutoringData.date); // Keep this for form init if needed, but startTime is key for past check
-        const startTime = new Date(tutoringData.start_time);
-        const endTime = new Date(tutoringData.end_time);
+        // Use tutoringData.start_time as the primary source for initial date and start time display
+        const initialStartTime = new Date(tutoringData.start_time);
+        const initialEndTime = new Date(tutoringData.end_time);
 
         setFormData({
           title: tutoringData.title,
           description: tutoringData.description,
-          date: format(sessionDate, "yyyy-MM-dd"),
-          start_time: format(startTime, "HH:mm"),
-          end_time: format(endTime, "HH:mm"),
+          date: format(initialStartTime, "yyyy-MM-dd"), // Derive date part from start_time
+          start_time: format(initialStartTime, "HH:mm"), // Derive time part from start_time
+          end_time: format(initialEndTime, "HH:mm"),   // Derive time part from end_time
           location: tutoringData.location || "",
           notes: tutoringData.notes || "",
         });
@@ -277,7 +278,7 @@ export default function EditTutoringPage() {
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={formData.date ? new Date(formData.date) : undefined}
+                          selected={formData.date ? parseDateFns(formData.date as string, 'yyyy-MM-dd', new Date()) : undefined}
                           onSelect={handleDateChange}
                           initialFocus
                           locale={es}
@@ -290,11 +291,23 @@ export default function EditTutoringPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="start_time">Hora de Inicio</Label>
-                    <Input id="start_time" name="start_time" type="time" value={typeof formData.start_time === 'string' ? formData.start_time : formData.start_time ? format(new Date(formData.start_time), "HH:mm") : ""} onChange={handleChange} required disabled={isPastSession} />
+                    <TimeSelect
+                      id="start_time"
+                      value={formData.start_time as string || ""}
+                      onChange={(newTime) => setFormData(prev => ({ ...prev, start_time: newTime }))}
+                      disabled={isPastSession}
+                      minuteStep={5}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="end_time">Hora de Fin</Label>
-                    <Input id="end_time" name="end_time" type="time" value={typeof formData.end_time === 'string' ? formData.end_time : formData.end_time ? format(new Date(formData.end_time), "HH:mm") : ""} onChange={handleChange} required disabled={isPastSession} />
+                    <TimeSelect
+                      id="end_time"
+                      value={formData.end_time as string || ""}
+                      onChange={(newTime) => setFormData(prev => ({ ...prev, end_time: newTime }))}
+                      disabled={isPastSession}
+                      minuteStep={5}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
