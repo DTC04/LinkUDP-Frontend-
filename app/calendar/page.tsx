@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog" 
 import { CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import Link from "next/link"
-import { format as formatDateFns } from "date-fns"
+import { format as formatDateFns, parse as parseDateFns } from "date-fns" // Import parse
 import { useRouter } from "next/navigation"; // Importar useRouter
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -107,27 +107,35 @@ export default function CalendarPage() {
         let formattedTutorias: TutoriaEvent[] = [];
         if (isStudentView) {
           // Data is an array of Booking objects
-          formattedTutorias = data.map((booking: any) => ({
-            id: booking.session.id,
-            title: booking.session.title,
-            date: formatDateFns(new Date(booking.session.date), "yyyy-MM-dd"),
-            start_time: formatDateFns(new Date(booking.session.start_time), "HH:mm"),
-            end_time: formatDateFns(new Date(booking.session.end_time), "HH:mm"),
-            courseName: booking.session.course?.name,
-            tutorName: booking.session.tutor?.user?.full_name,
-            // Consider adding booking status if relevant for display
-          }));
+          formattedTutorias = data.map((booking: any) => {
+            const sessionStartTime = new Date(booking.session.start_time);
+            const sessionEndTime = new Date(booking.session.end_time);
+            return {
+              id: booking.session.id,
+              title: booking.session.title,
+              date: formatDateFns(sessionStartTime, "yyyy-MM-dd"), // Derived from session's start_time
+              start_time: formatDateFns(sessionStartTime, "HH:mm"),
+              end_time: formatDateFns(sessionEndTime, "HH:mm"),
+              courseName: booking.session.course?.name,
+              tutorName: booking.session.tutor?.user?.full_name,
+              // Consider adding booking status if relevant for display
+            };
+          });
         } else {
           // Data is an array of TutoringSession objects (public view)
-          formattedTutorias = data.map((tutoria: any) => ({
-            id: tutoria.id,
-            title: tutoria.title,
-            date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"),
-            start_time: formatDateFns(new Date(tutoria.start_time), "HH:mm"),
-            end_time: formatDateFns(new Date(tutoria.end_time), "HH:mm"),
-            courseName: tutoria.course?.name,
-            tutorName: tutoria.tutor?.user?.full_name,
-          }));
+          formattedTutorias = data.map((tutoria: any) => {
+            const tutoriaStartTime = new Date(tutoria.start_time);
+            const tutoriaEndTime = new Date(tutoria.end_time);
+            return {
+              id: tutoria.id,
+              title: tutoria.title,
+              date: formatDateFns(tutoriaStartTime, "yyyy-MM-dd"), // Derived from tutoria's start_time
+              start_time: formatDateFns(tutoriaStartTime, "HH:mm"),
+              end_time: formatDateFns(tutoriaEndTime, "HH:mm"),
+              courseName: tutoria.course?.name,
+              tutorName: tutoria.tutor?.user?.full_name,
+            };
+          });
         }
         setAllTutorias(formattedTutorias);
       } catch (error) {
@@ -384,7 +392,8 @@ export default function CalendarPage() {
               <div className="space-y-3">
                 <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
                 <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
-                <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
+                {/* Correctly parse the YYYY-MM-DD string as a local date before formatting */}
+                <p><strong>Fecha:</strong> {formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy")}</p>
                 <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
                 {/* Aquí podrías añadir un enlace a la página de detalles de la tutoría si existe */}
                 <Link href={`/tutoring/${selectedEvent.id}`} passHref>
@@ -563,7 +572,8 @@ export default function CalendarPage() {
             <div className="space-y-4">
               <p><strong>Curso:</strong> {selectedEvent?.courseName || "No especificado"}</p>
               <p><strong>Tutor:</strong> {selectedEvent?.tutorName || "No especificado"}</p>
-              <p><strong>Fecha:</strong> {selectedEvent ? formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy") : "N/A"}</p>
+              {/* Correctly parse the YYYY-MM-DD string as a local date before formatting */}
+              <p><strong>Fecha:</strong> {selectedEvent ? formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy") : "N/A"}</p>
               <p><strong>Hora:</strong> {selectedEvent?.start_time} - {selectedEvent?.end_time}</p>
                {selectedEvent && (
                 <Link href={`/tutoring/${selectedEvent.id}`} passHref>
