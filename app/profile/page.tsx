@@ -99,17 +99,50 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container py-10">
-      <div className="mb-6 flex items-center">
-        <Link href="/" className="mr-4">
-          <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold text-sky-700">Mi Perfil de Tutor</h1>
-      </div>
+    <div className="flex min-h-screen flex-col"> {/* Envoltura principal para header y contenido */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
+          <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link
+              href="/tutoring"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Explorar
+            </Link>
+            <Link
+              href="/calendar"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Calendario
+            </Link>
+            <Link
+              href="/dashboard/student" // Asumiendo que el perfil es accesible desde un dashboard general o específico
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Mi Dashboard
+            </Link>
+            <Link
+              href="/profile"
+              className="text-sm font-medium text-foreground border-b-2 border-sky-600 pb-1"
+            >
+              Mi Perfil
+            </Link>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1 container py-10"> {/* Contenido principal con padding */}
+        <div className="mb-6 flex items-center">
+          {/* El botón de volver podría llevar al dashboard o a la página anterior */}
+          <Link href="/dashboard/student" className="mr-4">
+            <Button variant="ghost" size="icon">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-sky-700">Mi Perfil</h1> {/* Título general de perfil */}
+        </div>
 
-      <div className="flex flex-col gap-6 md:flex-row">
+        <div className="flex flex-col gap-6 md:flex-row">
         <div className="md:w-1/3">
           <Card>
             <CardHeader>
@@ -388,8 +421,16 @@ export default function ProfilePage() {
               </Card>
             </TabsContent>
           </Tabs>
+        </div> {/* Cierre de <div className="md:w-2/3"> */}
+        </div> {/* Cierre de <div className="flex flex-col gap-6 md:flex-row"> */}
+      </main> {/* Cierre de la etiqueta main */}
+      <footer className="border-t py-6 md:py-0"> {/* Footer similar a otras páginas */}
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
+          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+            © 2025 LINKUDP. Todos los derechos reservados.
+          </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

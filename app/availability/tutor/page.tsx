@@ -1,101 +1,104 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { toast } from "@/components/ui/use-toast"
-import { ChevronLeft } from "lucide-react"
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
+import { ChevronLeft } from "lucide-react";
 
-const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']
+const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 
 export default function ManageAvailabilityPage() {
-  const { getCurrentUserProfile } = useAuth()
-  const router = useRouter()
-  const [tutorId, setTutorId] = useState<number | null>(null)
-  const [blocks, setBlocks] = useState<any[]>([])
-  const [newBlock, setNewBlock] = useState({ day: '', start: '', end: '' })
-  const [editingBlockId, setEditingBlockId] = useState<number | null>(null)
-  const [editValues, setEditValues] = useState<{ day?: string; start?: string; end?: string }>({})
+  const { getCurrentUserProfile } = useAuth();
+  const router = useRouter();
+  const [tutorId, setTutorId] = useState<number | null>(null);
+  const [blocks, setBlocks] = useState<any[]>([]);
+  const [newBlock, setNewBlock] = useState({ day: '', start: '', end: '' });
+  const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
+  const [editValues, setEditValues] = useState<{ day?: string; start?: string; end?: string }>({});
 
   const fetchBlocks = async (id: number) => {
-    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`)
-    const data = await res.json()
-    setBlocks(data)
-  }
+    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, { credentials: 'include' });
+    const data = await res.json();
+    setBlocks(data);
+  };
 
   const init = useCallback(async () => {
-    const profile = await getCurrentUserProfile()
-    const id = profile?.tutorProfile?.id
+    const profile = await getCurrentUserProfile();
+    const id = profile?.tutorProfile?.id;
     if (id) {
-      setTutorId(id)
-      fetchBlocks(id)
+      setTutorId(id);
+      fetchBlocks(id);
     } else {
-      router.push('/login')
+      router.push('/login');
     }
-  }, [getCurrentUserProfile, router])
+  }, [getCurrentUserProfile, router]);
 
   useEffect(() => {
-    init()
-  }, [init])
+    init();
+  }, [init]);
 
   const handleCreate = async () => {
-    if (!tutorId) return
+    if (!tutorId) return;
     const res = await fetch('http://localhost:3000/disponibilidad', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tutorId,
         day_of_week: newBlock.day,
         start_time: new Date(`1970-01-01T${newBlock.start}:00`).toISOString(),
-        end_time: new Date(`1970-01-01T${newBlock.end}:00`).toISOString()
+        end_time: new Date(`1970-01-01T${newBlock.end}:00`).toISOString(),
       })
-    })
+    });
     if (res.ok) {
-      toast({ title: 'Bloque creado correctamente' })
-      fetchBlocks(tutorId)
-      setNewBlock({ day: '', start: '', end: '' })
+      toast({ title: 'Bloque creado correctamente' });
+      fetchBlocks(tutorId);
+      setNewBlock({ day: '', start: '', end: '' });
     } else {
-      toast({ title: 'Error al crear bloque', variant: 'destructive' })
+      toast({ title: 'Error al crear bloque', variant: 'destructive' });
     }
-  }
+  };
 
   const handleUpdate = async (id: number) => {
-    const block = blocks.find(b => b.id === id)
-    if (!block) return
+    const block = blocks.find(b => b.id === id);
+    if (!block) return;
 
     const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, {
       method: 'PUT',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         day_of_week: editValues.day || block.day_of_week,
         start_time: new Date(`1970-01-01T${editValues.start || block.start_time.slice(11, 16)}:00`).toISOString(),
-        end_time: new Date(`1970-01-01T${editValues.end || block.end_time.slice(11, 16)}:00`).toISOString()
+        end_time: new Date(`1970-01-01T${editValues.end || block.end_time.slice(11, 16)}:00`).toISOString(),
       }),
-    })
+    });
 
     if (res.ok) {
-      toast({ title: 'Bloque actualizado' })
-      setEditingBlockId(null)
-      setEditValues({})
-      if (tutorId) fetchBlocks(tutorId)
+      toast({ title: 'Bloque actualizado' });
+      setEditingBlockId(null);
+      setEditValues({});
+      if (tutorId) fetchBlocks(tutorId);
     } else {
-      toast({ title: 'Error al actualizar', variant: 'destructive' })
+      toast({ title: 'Error al actualizar', variant: 'destructive' });
     }
-  }
-
+  };
 
   const handleDelete = async (id: number) => {
-    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, { method: 'DELETE' })
+    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
     if (res.ok) {
-      toast({ title: 'Bloque eliminado' })
-      if (tutorId) fetchBlocks(tutorId)
+      toast({ title: 'Bloque eliminado' });
+      if (tutorId) fetchBlocks(tutorId);
     }
-  }
-
+  };
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

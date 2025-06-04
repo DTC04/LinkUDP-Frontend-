@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TimeSelect } from "@/components/ui/time-select"; // Import TimeSelect
 import {
   Select,
   SelectContent,
@@ -23,10 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Calendar as CalendarIcon } from "lucide-react"; // Added CalendarIcon
 import { useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "../../../hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover components
+import { Calendar } from "@/components/ui/calendar"; // Added Calendar component
+import { format, parse as parseDateFns } from "date-fns"; // Added format, parse
+import { es } from "date-fns/locale"; // Added es locale
 
 interface Course {
   id: number;
@@ -43,7 +48,7 @@ export default function CreateTutoringPage() {
   } = useAuth();
   const [currentUserProfile, setCurrentUserProfile] =
     useState<UserProfile | null>(null);
-  const [apiToken, setApiToken] = useState<string | null>(null);
+  // const [apiToken, setApiToken] = useState<string | null>(null); // Eliminado
   const [coursesList, setCoursesList] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
@@ -59,13 +64,13 @@ export default function CreateTutoringPage() {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      // Fetch profile and token
+      // Fetch profile
       const profile = await getCurrentUserProfile();
       setCurrentUserProfile(profile);
-      const storedToken = localStorage.getItem("token");
-      setApiToken(storedToken);
+      // const storedToken = localStorage.getItem("token"); // Eliminado
+      // setApiToken(storedToken); // Eliminado
 
-      if (!profile || !storedToken) {
+      if (!profile || !profile.user) { // Verificamos profile y profile.user
         toast({
           title: "Autenticación requerida",
           description: "Por favor, inicia sesión para crear una tutoría.",
@@ -78,13 +83,14 @@ export default function CreateTutoringPage() {
       // Fetch courses
       try {
         setLoadingCourses(true);
-        const coursesResponse = await fetch("http://localhost:3000/courses", { // Assuming this endpoint
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
+        // Aseguramos que se envíen las credenciales para obtener los cursos
+        const coursesResponse = await fetch("http://localhost:3000/courses", {
+          credentials: "include", // Agregado para enviar cookies de sesión
         });
         if (!coursesResponse.ok) {
-          throw new Error("Error al cargar la lista de cursos");
+          const errorBody = await coursesResponse.text();
+          console.error("Error response body from /courses:", errorBody);
+          throw new Error(`Error al cargar la lista de cursos. Status: ${coursesResponse.status}`);
         }
         const coursesData: Course[] = await coursesResponse.json();
         setCoursesList(coursesData);
@@ -113,14 +119,20 @@ export default function CreateTutoringPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({ ...prev, date: format(date, "yyyy-MM-dd") }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUserProfile || !currentUserProfile.user || !apiToken) {
+    if (!currentUserProfile || !currentUserProfile.user) { // Eliminada la comprobación de apiToken
       toast({
         title: "Error de autenticación",
         description:
-          "No se pudo obtener la información del usuario o el token. Por favor, reintenta iniciar sesión.",
+          "No se pudo obtener la información del usuario. Por favor, reintenta iniciar sesión.",
         variant: "destructive",
       });
       router.push("/login");
@@ -192,8 +204,9 @@ export default function CreateTutoringPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiToken}`,
+          // Authorization: `Bearer ${apiToken}`, // Eliminado, confiamos en cookies via credentials: "include"
         },
+        credentials: "include", // Aseguramos que las cookies se envíen
         body: JSON.stringify(tutoriaData),
       });
 
@@ -236,17 +249,49 @@ export default function CreateTutoringPage() {
   }
 
   return (
-    <div className="container py-10">
-      <div className="mb-6 flex items-center">
-        <Link href="/dashboard/tutor" className="mr-4">
-          <Button variant="ghost" size="icon">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold text-sky-700">Crear Nueva Tutoría</h1>
-      </div>
+    <div className="flex min-h-screen flex-col"> {/* Envoltura principal */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
+          <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link
+              href="/tutoring"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Explorar
+            </Link>
+            <Link
+              href="/calendar"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Calendario
+            </Link>
+            <Link
+              href="/dashboard/tutor" // Asumiendo que esta página es para tutores
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Mi Dashboard
+            </Link>
+            <Link
+              href="/profile/tutor" // Asumiendo que esta página es para tutores
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Mi Perfil
+            </Link>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1 container py-10"> {/* Contenido principal */}
+        <div className="mb-6 flex items-center">
+          <Link href="/dashboard/tutor" className="mr-4">
+            <Button variant="ghost" size="icon">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-sky-700">Crear Nueva Tutoría</h1>
+        </div>
 
-      <Card className="mx-auto max-w-2xl">
+        <Card className="mx-auto max-w-2xl">
         <CardHeader>
           <CardTitle>Detalles de la Tutoría</CardTitle>
           <CardDescription>
@@ -304,38 +349,52 @@ export default function CreateTutoringPage() {
                 required
               />
             </div>
+            {/* Date Picker Group */}
+            <div className="grid gap-2">
+              <Label htmlFor="date">Fecha</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={`w-full justify-start text-left font-normal ${
+                      !formData.date && "text-muted-foreground"
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date ? format(parseDateFns(formData.date, 'yyyy-MM-dd', new Date()), "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date ? parseDateFns(formData.date, 'yyyy-MM-dd', new Date()) : undefined}
+                    onSelect={handleDateChange}
+                    initialFocus
+                    locale={es}
+                    disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Time Pickers Group (Start and End side-by-side) */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="startTime">Hora de inicio</Label>
-                <Input
+                <TimeSelect
                   id="startTime"
-                  name="startTime"
-                  type="time"
                   value={formData.startTime}
-                  onChange={handleChange}
-                  required
+                  onChange={(newTime) => handleSelectChange("startTime", newTime)}
+                  minuteStep={5}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="endTime">Hora de fin</Label>
-                <Input
+                <TimeSelect
                   id="endTime"
-                  name="endTime"
-                  type="time"
                   value={formData.endTime}
-                  onChange={handleChange}
-                  required
+                  onChange={(newTime) => handleSelectChange("endTime", newTime)}
+                  minuteStep={5}
                 />
               </div>
             </div>
@@ -361,13 +420,21 @@ export default function CreateTutoringPage() {
             <Button
               type="submit"
               className="bg-sky-600 hover:bg-sky-700"
-              disabled={authLoading || !currentUserProfile || !apiToken}
+              disabled={authLoading || !currentUserProfile } // Eliminada la comprobación de apiToken
             >
               Crear Tutoría
             </Button>
           </CardFooter>
         </form>
       </Card>
+      </main> {/* Cierre de <main> */}
+      <footer className="border-t py-6 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
+          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+            © 2025 LINKUDP. Todos los derechos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

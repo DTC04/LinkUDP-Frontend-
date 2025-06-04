@@ -74,23 +74,15 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("No autenticado. Redirigiendo al login...");
-        router.push("/login");
-        return;
-      }
       try {
         setLoading(true);
         setError(null);
         const res = await fetch("http://localhost:3000/profile/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include",
         });
+  
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem("token");
             setError("Sesión expirada o inválida. Redirigiendo al login...");
             router.push("/login");
           } else {
@@ -101,6 +93,7 @@ export default function StudentProfilePage() {
           }
           return;
         }
+  
         const data: ApiUserResponse = await res.json();
         if (data && data.user) {
           const studentData = data.studentProfile;
@@ -135,8 +128,10 @@ export default function StudentProfilePage() {
         setLoading(false);
       }
     };
+  
     fetchProfileData();
   }, [router]);
+  
 
   const handleProfileChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -174,12 +169,6 @@ export default function StudentProfilePage() {
 
   const saveProfile = async () => {
     if (!profile) return;
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("No autenticado. No se pueden guardar los cambios.");
-      router.push("/login");
-      return;
-    }
     setSaving(true);
     setError(null);
     let studyYearNumber: number | undefined = undefined;
@@ -203,11 +192,12 @@ export default function StudentProfilePage() {
       const res = await fetch("http://localhost:3000/profile/me", {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
+           
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(
