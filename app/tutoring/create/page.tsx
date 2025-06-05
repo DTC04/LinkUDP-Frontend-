@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TimeSelect } from "@/components/ui/time-select"; // Import TimeSelect
 import {
   Select,
   SelectContent,
@@ -23,10 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Calendar as CalendarIcon } from "lucide-react"; // Added CalendarIcon
 import { useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "../../../hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Added Popover components
+import { Calendar } from "@/components/ui/calendar"; // Added Calendar component
+import { format, parse as parseDateFns } from "date-fns"; // Added format, parse
+import { es } from "date-fns/locale"; // Added es locale
 
 interface Course {
   id: number;
@@ -112,6 +117,12 @@ export default function CreateTutoringPage() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setFormData((prev) => ({ ...prev, date: format(date, "yyyy-MM-dd") }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -338,38 +349,52 @@ export default function CreateTutoringPage() {
                 required
               />
             </div>
+            {/* Date Picker Group */}
+            <div className="grid gap-2">
+              <Label htmlFor="date">Fecha</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={`w-full justify-start text-left font-normal ${
+                      !formData.date && "text-muted-foreground"
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date ? format(parseDateFns(formData.date, 'yyyy-MM-dd', new Date()), "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date ? parseDateFns(formData.date, 'yyyy-MM-dd', new Date()) : undefined}
+                    onSelect={handleDateChange}
+                    initialFocus
+                    locale={es}
+                    disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Time Pickers Group (Start and End side-by-side) */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="startTime">Hora de inicio</Label>
-                <Input
+                <TimeSelect
                   id="startTime"
-                  name="startTime"
-                  type="time"
                   value={formData.startTime}
-                  onChange={handleChange}
-                  required
+                  onChange={(newTime) => handleSelectChange("startTime", newTime)}
+                  minuteStep={5}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="endTime">Hora de fin</Label>
-                <Input
+                <TimeSelect
                   id="endTime"
-                  name="endTime"
-                  type="time"
                   value={formData.endTime}
-                  onChange={handleChange}
-                  required
+                  onChange={(newTime) => handleSelectChange("endTime", newTime)}
+                  minuteStep={5}
                 />
               </div>
             </div>
