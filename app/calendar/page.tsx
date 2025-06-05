@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react" // Agregado useEffect
+import { useState, useEffect } from "react" 
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" // Ajustado a LinkUPD
@@ -12,10 +12,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog" // Ajustado a LinkUPD
+} from "@/components/ui/dialog" 
 import { CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import Link from "next/link"
-import { format as formatDateFns } from "date-fns"
+import { format as formatDateFns, parse as parseDateFns } from "date-fns" // Import parse
+import { useRouter } from "next/navigation"; // Importar useRouter
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { useAuth, type UserProfile as AuthUserProfile } from "@/hooks/use-auth" // Importar useAuth
@@ -36,6 +37,7 @@ interface TutoriaEvent {
 export default function CalendarPage() {
   const isMobile = useIsMobile();
   const { getCurrentUserProfile, loading: authLoading } = useAuth(); // Usar useAuth
+  const router = useRouter(); // Inicializar useRouter
   const [currentUserProfile, setCurrentUserProfile] = useState<AuthUserProfile | null>(null);
   const [dashboardUrl, setDashboardUrl] = useState("/login"); // Estado para URL dinámica
   const [profileUrl, setProfileUrl] = useState("/login"); // Estado para URL dinámica
@@ -49,7 +51,6 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const fetchProfileAndTutorias = async () => {
-      // Obtener perfil para determinar URLs de navegación
       const profile = await getCurrentUserProfile();
       setCurrentUserProfile(profile);
 
@@ -62,53 +63,80 @@ export default function CalendarPage() {
           setDashboardUrl("/dashboard/student");
           setProfileUrl("/profile/student");
         } else {
-          setDashboardUrl("/dashboard/student"); // Fallback
-          setProfileUrl("/profile"); // Fallback
+          setDashboardUrl("/dashboard/student");
+          setProfileUrl("/profile");
         }
-      } else {
-        // Si no hay perfil (no logueado), los enlaces por defecto en el header ya apuntan a login/register
       }
 
-      // Cargar tutorías
       setLoadingTutorias(true);
       try {
-        const response = await fetch("http://localhost:3000/tutorias"); // Ajusta el endpoint si es necesario
+        let endpoint = "http://localhost:3000/tutorias";
+        let isStudentView = false;
+
+        if (profile?.user?.role === "STUDENT" || profile?.user?.role === "BOTH") {
+          endpoint = "http://localhost:3000/bookings/me?status=PENDING&status=CONFIRMED";
+          isStudentView = true;
+        } else if (profile?.user?.role === "TUTOR") {
+          endpoint = `http://localhost:3000/tutorias?tutorId=${profile.user.id}`;
+        }
+
+        const token = localStorage.getItem('token');
+        const response = await fetch(endpoint, {
+          credentials: 'include',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
+
         if (!response.ok) {
-          throw new Error("Error al cargar las tutorías");
+          if (response.status === 401) {
+            console.error("Error de autenticación (401) al cargar tutorías. Redirigiendo a login.");
+            localStorage.removeItem('token');
+            router.push("/login");
+            setLoadingTutorias(false);
+            return;
+          }
+          throw new Error(`Error al cargar las tutorías: ${response.status} ${response.statusText}`);
         }
-
         const data = await response.json();
-        let filteredTutorias = data;
-
-        // Si es solo TUTOR, filtrar tutorías que haya creado ese tutor
-        if (profile?.user?.role === "TUTOR") {
-          filteredTutorias = data.filter(
-            (tutoria: any) => tutoria.tutorId === profile.user.id
-          );
+        let formattedTutorias: TutoriaEvent[] = [];
+        if (isStudentView) {
+          formattedTutorias = data.map((booking: any) => {
+            const sessionStartTime = new Date(booking.session.start_time);
+            const sessionEndTime = new Date(booking.session.end_time);
+            return {
+              id: booking.session.id,
+              title: booking.session.title,
+              date: formatDateFns(sessionStartTime, "yyyy-MM-dd"),
+              start_time: formatDateFns(sessionStartTime, "HH:mm"),
+              end_time: formatDateFns(sessionEndTime, "HH:mm"),
+              courseName: booking.session.course?.name,
+              tutorName: booking.session.tutor?.user?.full_name,
+            };
+          });
+        } else {
+          formattedTutorias = data.map((tutoria: any) => {
+            const tutoriaStartTime = new Date(tutoria.start_time);
+            const tutoriaEndTime = new Date(tutoria.end_time);
+            return {
+              id: tutoria.id,
+              title: tutoria.title,
+              date: formatDateFns(tutoriaStartTime, "yyyy-MM-dd"),
+              start_time: formatDateFns(tutoriaStartTime, "HH:mm"),
+              end_time: formatDateFns(tutoriaEndTime, "HH:mm"),
+              courseName: tutoria.course?.name,
+              tutorName: tutoria.tutor?.user?.full_name,
+            };
+          });
         }
-
-        const formattedTutorias: TutoriaEvent[] = filteredTutorias.map((tutoria: any) => ({
-          id: tutoria.id,
-          title: tutoria.title,
-          date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"),
-          start_time: formatDateFns(new Date(tutoria.start_time), "HH:mm"),
-          end_time: formatDateFns(new Date(tutoria.end_time), "HH:mm"),
-          courseName: tutoria.course?.name,
-          tutorName: tutoria.tutor?.user?.full_name,
-        }));
-
         setAllTutorias(formattedTutorias);
       } catch (error) {
         console.error("Error fetching tutorias:", error);
-        // Puedes mostrar un toast o mensaje visual aquí
+        setAllTutorias([]);
       } finally {
         setLoadingTutorias(false);
       }
     };
-
     fetchProfileAndTutorias();
   }, [getCurrentUserProfile]);
-
 
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
@@ -344,33 +372,31 @@ export default function CalendarPage() {
 
         {/* Dialog para detalles de tutoría/evento */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
-            <div className="flex items-start gap-3">
-              <CalendarIcon className="h-5 w-5 text-sky-600 mt-1" />
-              <div className="flex-1 space-y-3">
-                <DialogHeader>
-                  <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle>
-                  <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
-                </DialogHeader>
-
-                {selectedEvent && (
-                  <div className="space-y-3">
-                    <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
-                    <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
-                    <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
-                    <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
-                    <Link href={`/tutoring/${selectedEvent.id}`} passHref>
-                      <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
-                    </Link>
-                  </div>
-                )}
+          <DialogContent className="w-[95vw] max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle> {/* Usar selectedEvent.title */}
+              <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
+            </DialogHeader>
+            {selectedEvent && (
+              <div className="space-y-3">
+                <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
+                <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
+                {/* Correctly parse the YYYY-MM-DD string as a local date before formatting */}
+                <p><strong>Fecha:</strong> {formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy")}</p>
+                <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
+                {/* Aquí podrías añadir un enlace a la página de detalles de la tutoría si existe */}
+                <Link href={`/tutoring/${selectedEvent.id}`} passHref>
+                   <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
+                </Link>
               </div>
-            </div>
-
+            )}
             <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                 Cerrar
               </Button>
+              {/* <Button size="sm" variant="default" className="w-full sm:w-auto">
+                Ver Más
+              </Button> */}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -496,85 +522,63 @@ export default function CalendarPage() {
           <CardContent className="space-y-4">
             {selectedDateForDetails ? (
               selectedDayEvents.length > 0 ? (
-                selectedDayEvents.map((event: TutoriaEvent, index: number) => {
-                  const isExpanded = selectedEvent?.id === event.id;
-
-                  return (
-                    <motion.div
-                      key={event.id || index}
-                      className="p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        setSelectedEvent(isExpanded ? null : event) // Alternar expansión
-                      }
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                    >
-                      <h4 className="font-semibold">{event.title}</h4>
-                      <p className="text-xs text-muted-foreground">{event.courseName}</p>
-                      {isExpanded && (
-                        <>
-                          <p className="text-xs text-muted-foreground">Tutor: {event.tutorName}</p>
-                          <p className="text-xs text-muted-foreground">Hora: {event.start_time} - {event.end_time}</p>
-                           <Link href={`/tutoring/${event.id}`} passHref>
-                              <Button variant="link" size="sm" className="p-0 h-auto">
-                                Ver detalles completos
-                              </Button>
-                            </Link>
-                        </>
-                      )}
-                    </motion.div>
-                  );
-                })
+                selectedDayEvents.map((event: any, index: number) => (
+                  <motion.div
+                    key={event.id || index}
+                    className="p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setIsDialogOpen(true);
+                    }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                  >
+                    <h4 className="font-semibold">{event.title}</h4>
+                     <p className="text-xs text-muted-foreground">{event.courseName}</p>
+                    <p className="text-xs text-muted-foreground">Tutor: {event.tutorName}</p>
+                    <p className="text-xs text-muted-foreground">Hora: {event.start_time} - {event.end_time}</p>
+                  </motion.div>
+                ))
               ) : (
-                <p className="text-muted-foreground">
-                  {loadingTutorias ? "Cargando tutorías..." : "No hay tutorías programadas para este día."}
-                </p>
+                <p className="text-muted-foreground">{loadingTutorias ? "Cargando tutorías..." : "No hay tutorías programadas para este día."}</p>
               )
             ) : (
-              <p className="text-muted-foreground">
-                Haz clic en un día del calendario para ver las tutorías.
-              </p>
+              <p className="text-muted-foreground">Haz clic en un día del calendario para ver las tutorías.</p>
             )}
           </CardContent>
-
         </Card>
       </motion.div>
     </motion.div>
 
-       {/* Cuadro de dialogo */}     
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md border-2 border-sky-500">
-          <div className="flex items-start gap-3">
-            <CalendarIcon className="h-5 w-5 text-sky-600 mt-1" />
-            <div className="flex-1 space-y-3">
-              <DialogHeader>
-                <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle>
-                <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
-              </DialogHeader>
-
-              {selectedEvent && (
-                <div className="space-y-3">
-                  <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
-                  <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
-                  <p><strong>Fecha:</strong> {formatDateFns(new Date(selectedEvent.date), "dd/MM/yyyy")}</p>
-                  <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
-                  <Link href={`/tutoring/${selectedEvent.id}`} passHref>
-                    <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
-                  </Link>
-                </div>
-              )}
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.title || "Detalle de Tutoría"}</DialogTitle> {/* Usar selectedEvent.title */}
+            <DialogDescription>Información detallada de la tutoría seleccionada.</DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <p><strong>Curso:</strong> {selectedEvent?.courseName || "No especificado"}</p>
+              <p><strong>Tutor:</strong> {selectedEvent?.tutorName || "No especificado"}</p>
+              {/* Correctly parse the YYYY-MM-DD string as a local date before formatting */}
+              <p><strong>Fecha:</strong> {selectedEvent ? formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy") : "N/A"}</p>
+              <p><strong>Hora:</strong> {selectedEvent?.start_time} - {selectedEvent?.end_time}</p>
+               {selectedEvent && (
+                <Link href={`/tutoring/${selectedEvent.id}`} passHref>
+                   <Button variant="link" size="sm" className="p-0 h-auto text-sky-600">Ver detalles completos de la tutoría</Button>
+                </Link>
+               )}
             </div>
-          </div>
-
-          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cerrar
             </Button>
+            {/* <Button variant="default">Unirse/Modificar</Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </motion.div>
       </main> {/* Fin del contenido principal del calendario */}
       <footer className="border-t py-6 md:py-0">

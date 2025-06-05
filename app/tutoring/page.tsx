@@ -180,10 +180,7 @@ export default function TutoringListPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-                <span className="sr-only">Filtrar tutorías</span>
-              </Button>
+            
               {loggedInUserProfile && loggedInUserProfile.user && loggedInUserProfile.user.role !== "STUDENT" && (
                 <Link href="/tutoring/create">
                   <Button className="bg-sky-600 hover:bg-sky-700">
