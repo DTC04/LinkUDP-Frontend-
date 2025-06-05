@@ -52,11 +52,13 @@ export default function CalendarPage() {
       // Obtener perfil para determinar URLs de navegación
       const profile = await getCurrentUserProfile();
       setCurrentUserProfile(profile);
+
       if (profile?.user) {
-        if (profile.user.role === "TUTOR" || profile.user.role === "BOTH") {
+        const role = profile.user.role;
+        if (role === "TUTOR" || role === "BOTH") {
           setDashboardUrl("/dashboard/tutor");
           setProfileUrl("/profile/tutor");
-        } else if (profile.user.role === "STUDENT") {
+        } else if (role === "STUDENT") {
           setDashboardUrl("/dashboard/student");
           setProfileUrl("/profile/student");
         } else {
@@ -64,36 +66,49 @@ export default function CalendarPage() {
           setProfileUrl("/profile"); // Fallback
         }
       } else {
-         // Si no hay perfil (no logueado), los enlaces por defecto en el header ya apuntan a login/register
+        // Si no hay perfil (no logueado), los enlaces por defecto en el header ya apuntan a login/register
       }
 
       // Cargar tutorías
       setLoadingTutorias(true);
       try {
-        const response = await fetch("http://localhost:3000/tutorias"); // Asumiendo endpoint
+        const response = await fetch("http://localhost:3000/tutorias"); // Ajusta el endpoint si es necesario
         if (!response.ok) {
           throw new Error("Error al cargar las tutorías");
         }
+
         const data = await response.json();
-        const formattedTutorias: TutoriaEvent[] = data.map((tutoria: any) => ({
+        let filteredTutorias = data;
+
+        // Si es solo TUTOR, filtrar tutorías que haya creado ese tutor
+        if (profile?.user?.role === "TUTOR") {
+          filteredTutorias = data.filter(
+            (tutoria: any) => tutoria.tutorId === profile.user.id
+          );
+        }
+
+        const formattedTutorias: TutoriaEvent[] = filteredTutorias.map((tutoria: any) => ({
           id: tutoria.id,
           title: tutoria.title,
-          date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"), // Asegurar formato YYYY-MM-DD
+          date: formatDateFns(new Date(tutoria.date), "yyyy-MM-dd"),
           start_time: formatDateFns(new Date(tutoria.start_time), "HH:mm"),
           end_time: formatDateFns(new Date(tutoria.end_time), "HH:mm"),
           courseName: tutoria.course?.name,
           tutorName: tutoria.tutor?.user?.full_name,
         }));
+
         setAllTutorias(formattedTutorias);
       } catch (error) {
         console.error("Error fetching tutorias:", error);
-        // Aquí podrías mostrar un toast o mensaje de error
+        // Puedes mostrar un toast o mensaje visual aquí
       } finally {
         setLoadingTutorias(false);
       }
     };
+
     fetchProfileAndTutorias();
   }, [getCurrentUserProfile]);
+
 
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
@@ -481,31 +496,48 @@ export default function CalendarPage() {
           <CardContent className="space-y-4">
             {selectedDateForDetails ? (
               selectedDayEvents.length > 0 ? (
-                selectedDayEvents.map((event: any, index: number) => (
-                  <motion.div
-                    key={event.id || index}
-                    className="p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-muted/50"
-                    onClick={() => {
-                      setSelectedEvent(event);
-                      setIsDialogOpen(true);
-                    }}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                  >
-                    <h4 className="font-semibold">{event.title}</h4>
-                     <p className="text-xs text-muted-foreground">{event.courseName}</p>
-                    <p className="text-xs text-muted-foreground">Tutor: {event.tutorName}</p>
-                    <p className="text-xs text-muted-foreground">Hora: {event.start_time} - {event.end_time}</p>
-                  </motion.div>
-                ))
+                selectedDayEvents.map((event: TutoriaEvent, index: number) => {
+                  const isExpanded = selectedEvent?.id === event.id;
+
+                  return (
+                    <motion.div
+                      key={event.id || index}
+                      className="p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:bg-muted/50"
+                      onClick={() =>
+                        setSelectedEvent(isExpanded ? null : event) // Alternar expansión
+                      }
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                    >
+                      <h4 className="font-semibold">{event.title}</h4>
+                      <p className="text-xs text-muted-foreground">{event.courseName}</p>
+                      {isExpanded && (
+                        <>
+                          <p className="text-xs text-muted-foreground">Tutor: {event.tutorName}</p>
+                          <p className="text-xs text-muted-foreground">Hora: {event.start_time} - {event.end_time}</p>
+                           <Link href={`/tutoring/${event.id}`} passHref>
+                              <Button variant="link" size="sm" className="p-0 h-auto">
+                                Ver detalles completos
+                              </Button>
+                            </Link>
+                        </>
+                      )}
+                    </motion.div>
+                  );
+                })
               ) : (
-                <p className="text-muted-foreground">{loadingTutorias ? "Cargando tutorías..." : "No hay tutorías programadas para este día."}</p>
+                <p className="text-muted-foreground">
+                  {loadingTutorias ? "Cargando tutorías..." : "No hay tutorías programadas para este día."}
+                </p>
               )
             ) : (
-              <p className="text-muted-foreground">Haz clic en un día del calendario para ver las tutorías.</p>
+              <p className="text-muted-foreground">
+                Haz clic en un día del calendario para ver las tutorías.
+              </p>
             )}
           </CardContent>
+
         </Card>
       </motion.div>
     </motion.div>
