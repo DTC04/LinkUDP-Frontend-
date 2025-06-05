@@ -213,7 +213,7 @@ export default function TutoringListPage() {
                   </CardContent>
                     <CardFooter className="border-t bg-muted/50 px-4 py-2">
                     <div className="flex w-full justify-between text-xs text-muted-foreground">
-                      <span>Horario: {tutoring.schedule || new Date(tutoring.date).toLocaleDateString() + " " + new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>Horario: {tutoring.schedule || new Date(tutoring.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }) + " " + new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       <span>Duración: {tutoring.duration || `${((new Date(tutoring.end_time).getTime() - new Date(tutoring.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs`}</span>
                     </div>
                   </CardFooter>

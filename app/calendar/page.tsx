@@ -76,9 +76,14 @@ export default function CalendarPage() {
         if (profile?.user?.role === "STUDENT" || profile?.user?.role === "BOTH") {
           endpoint = "http://localhost:3000/bookings/me?status=PENDING&status=CONFIRMED";
           isStudentView = true;
-        } else if (profile?.user?.role === "TUTOR") {
-          endpoint = `http://localhost:3000/tutorias?tutorId=${profile.user.id}`;
+        } else if (profile?.user?.role === "TUTOR" && profile.tutorProfile?.id) {
+          endpoint = `http://localhost:3000/tutorias?tutorId=${profile.tutorProfile.id}`;
+        } else if (profile?.user?.role === "TUTOR" && !profile.tutorProfile?.id) {
+          console.error("User has TUTOR role but no tutorProfile.id, cannot fetch tutorias for calendar.");
+          setLoadingTutorias(false);
+          return; // Or set endpoint to a dummy one that returns empty
         }
+
 
         const token = localStorage.getItem('token');
         const response = await fetch(endpoint, {
