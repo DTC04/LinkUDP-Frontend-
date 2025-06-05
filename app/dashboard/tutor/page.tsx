@@ -105,7 +105,7 @@ export default function TutorDashboardPage() {
               area: item.course?.name || "N/A",
               description: item.description,
               students: item.bookings?.length || 0,
-              date: new Date(item.date).toLocaleDateString(),
+              date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               status: item.status,
@@ -138,7 +138,7 @@ export default function TutorDashboardPage() {
               title: item.title,
               area: item.course?.name || "N/A",
               student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-              date: new Date(item.date).toLocaleDateString(),
+              date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               bookingId: item.bookings?.[0]?.id, // Guardamos el ID del booking
@@ -163,7 +163,7 @@ export default function TutorDashboardPage() {
             title: item.title,
             area: item.course?.name || "N/A",
             student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-            date: new Date(item.date).toLocaleDateString(),
+            date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
             time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
             location: item.location || "Online",
           }));
