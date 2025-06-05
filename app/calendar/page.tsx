@@ -51,75 +51,85 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const fetchProfileAndTutorias = async () => {
+      // Obtener perfil para determinar URLs de navegación
       const profile = await getCurrentUserProfile();
       setCurrentUserProfile(profile);
-
       if (profile?.user) {
-        const role = profile.user.role;
-        if (role === "TUTOR" || role === "BOTH") {
+        if (profile.user.role === "TUTOR" || profile.user.role === "BOTH") {
           setDashboardUrl("/dashboard/tutor");
           setProfileUrl("/profile/tutor");
-        } else if (role === "STUDENT") {
+        } else if (profile.user.role === "STUDENT") {
           setDashboardUrl("/dashboard/student");
           setProfileUrl("/profile/student");
         } else {
-          setDashboardUrl("/dashboard/student");
-          setProfileUrl("/profile");
+          setDashboardUrl("/dashboard/student"); // Fallback
+          setProfileUrl("/profile"); // Fallback
         }
+      } else {
+         // Si no hay perfil (no logueado), los enlaces por defecto en el header ya apuntan a login/register
       }
 
+      // Cargar tutorías
       setLoadingTutorias(true);
       try {
-        let endpoint = "http://localhost:3000/tutorias";
+        let endpoint = "http://localhost:3000/tutorias"; // Default endpoint
         let isStudentView = false;
 
-        if (profile?.user?.role === "STUDENT" || profile?.user?.role === "BOTH") {
+        if (profile?.user && (profile.user.role === "STUDENT" || profile.user.role === "BOTH")) {
+          // Fetch only PENDING or CONFIRMED bookings for the student's calendar
           endpoint = "http://localhost:3000/bookings/me?status=PENDING&status=CONFIRMED";
           isStudentView = true;
-        } else if (profile?.user?.role === "TUTOR") {
-          endpoint = `http://localhost:3000/tutorias?tutorId=${profile.user.id}`;
         }
+        
+        // Retrieve token for authenticated requests - assuming useAuth or a wrapper handles this
+        // For simplicity, directly fetching. In a real app, use a service or context for API calls.
+        const token = localStorage.getItem('token'); // Or however token is stored
 
-        const token = localStorage.getItem('token');
         const response = await fetch(endpoint, {
-          credentials: 'include',
+          credentials: 'include', // Crucial for sending cookies
           headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         });
 
         if (!response.ok) {
           if (response.status === 401) {
+            // Token might be invalid, expired, or not present
             console.error("Error de autenticación (401) al cargar tutorías. Redirigiendo a login.");
-            localStorage.removeItem('token');
-            router.push("/login");
+            localStorage.removeItem('token'); // Simple way to clear token
+            router.push("/login"); // Use router here
             setLoadingTutorias(false);
-            return;
+            return; // Stop further execution
           }
+          // For other errors, throw to be caught by the catch block
           throw new Error(`Error al cargar las tutorías: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
+
         let formattedTutorias: TutoriaEvent[] = [];
         if (isStudentView) {
+          // Data is an array of Booking objects
           formattedTutorias = data.map((booking: any) => {
             const sessionStartTime = new Date(booking.session.start_time);
             const sessionEndTime = new Date(booking.session.end_time);
             return {
               id: booking.session.id,
               title: booking.session.title,
-              date: formatDateFns(sessionStartTime, "yyyy-MM-dd"),
+              date: formatDateFns(sessionStartTime, "yyyy-MM-dd"), // Derived from session's start_time
               start_time: formatDateFns(sessionStartTime, "HH:mm"),
               end_time: formatDateFns(sessionEndTime, "HH:mm"),
               courseName: booking.session.course?.name,
               tutorName: booking.session.tutor?.user?.full_name,
+              // Consider adding booking status if relevant for display
             };
           });
         } else {
+          // Data is an array of TutoringSession objects (public view)
           formattedTutorias = data.map((tutoria: any) => {
             const tutoriaStartTime = new Date(tutoria.start_time);
             const tutoriaEndTime = new Date(tutoria.end_time);
             return {
               id: tutoria.id,
               title: tutoria.title,
-              date: formatDateFns(tutoriaStartTime, "yyyy-MM-dd"),
+              date: formatDateFns(tutoriaStartTime, "yyyy-MM-dd"), // Derived from tutoria's start_time
               start_time: formatDateFns(tutoriaStartTime, "HH:mm"),
               end_time: formatDateFns(tutoriaEndTime, "HH:mm"),
               courseName: tutoria.course?.name,
@@ -130,7 +140,8 @@ export default function CalendarPage() {
         setAllTutorias(formattedTutorias);
       } catch (error) {
         console.error("Error fetching tutorias:", error);
-        setAllTutorias([]);
+        setAllTutorias([]); // Clear tutorias on error
+        // Aquí podrías mostrar un toast o mensaje de error
       } finally {
         setLoadingTutorias(false);
       }
