@@ -142,6 +142,25 @@ export function useAuth() {
     }
   }, []);
 
+
+  const refetchUser = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/profile/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+      } else {
+        console.error("No se pudo refrescar el usuario:", data.message);
+      }
+    } catch (err: any) {
+      console.error("Error en refetchUser:", err.message);
+    }
+  };
+
+
   // ✅ Cargar automáticamente el usuario al montar
   useEffect(() => {
     (async () => {
@@ -332,6 +351,7 @@ export function useAuth() {
     updateStudentProfile,
     updateTutorProfile,
     getCurrentUserProfile,
+    refetchUser,
     logout,
   };
 }
