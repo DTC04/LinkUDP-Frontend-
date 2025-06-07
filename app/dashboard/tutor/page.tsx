@@ -61,7 +61,11 @@ export default function TutorDashboardPage() {
   const [solicitudesData, setSolicitudesData] = useState<Session[]>([]);
   const [accionEnCurso, setAccionEnCurso] = useState<string | null>(null);
   const [deletingTutoringId, setDeletingTutoringId] = useState<string | number | null>(null);
+  const dayOrder = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']
 
+  const sortedAvailability = [...availabilityData].sort((a, b) => {
+    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
+  })
 
   const fetchSolicitudesRef = useRef<() => Promise<void>>();
   const fetchUpcomingSessionsRef = useRef<() => Promise<void>>();
@@ -105,7 +109,7 @@ export default function TutorDashboardPage() {
               area: item.course?.name || "N/A",
               description: item.description,
               students: item.bookings?.length || 0,
-              date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
+              date: new Date(item.date).toLocaleDateString(),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               status: item.status,
@@ -138,7 +142,7 @@ export default function TutorDashboardPage() {
               title: item.title,
               area: item.course?.name || "N/A",
               student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-              date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
+              date: new Date(item.date).toLocaleDateString(),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               bookingId: item.bookings?.[0]?.id, // Guardamos el ID del booking
@@ -163,7 +167,7 @@ export default function TutorDashboardPage() {
             title: item.title,
             area: item.course?.name || "N/A",
             student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-            date: new Date(item.start_time).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' }),
+            date: new Date(item.date).toLocaleDateString(),
             time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
             location: item.location || "Online",
           }));
@@ -179,8 +183,8 @@ export default function TutorDashboardPage() {
             currentUserProfile.tutorProfile.availability.map((av: any) => ({
               id: av.id,
               day: av.day_of_week,
-              startTime: av.start_time,
-              endTime: av.end_time,
+              startTime: new Date(av.start_time),
+              endTime: new Date(av.end_time),
               status: "available",
             })),
           );
@@ -235,6 +239,19 @@ export default function TutorDashboardPage() {
         typeof fetchUpcomingSessionsRef.current === "function" ? fetchUpcomingSessionsRef.current() : null,
         typeof fetchMyTutoringsRef.current === "function" ? fetchMyTutoringsRef.current() : null,
       ]);
+      const updatedProfile = await getCurrentUserProfile();
+      setCurrentUserProfile(updatedProfile);
+      if (updatedProfile?.tutorProfile?.availability) {
+        setAvailabilityData(
+          updatedProfile.tutorProfile.availability.map((av: any) => ({
+            id: av.id,
+            day: av.day_of_week,
+            startTime: new Date(av.start_time),
+            endTime: new Date(av.end_time),
+            status: "available",
+          })),
+        );
+      }
 
       toast({
         title: "Tutoría confirmada",
@@ -616,7 +633,8 @@ export default function TutorDashboardPage() {
                           <div>
                             <p className="font-medium">{slot.day}</p>
                             <p className="text-sm text-muted-foreground">
-                              {slot.startTime} - {slot.endTime}
+                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                              {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           <Badge variant={slot.status === "available" ? "outline" : "secondary"}>
@@ -624,15 +642,19 @@ export default function TutorDashboardPage() {
                           </Badge>
                         </div>
                       ))
-                    ) : (
-                      <p className="text-muted-foreground">No has configurado tu disponibilidad.</p>
-                    )}
+                    ) : null}
                   </div>
-                </CardContent>
+                </CardContent>              
+                <CardFooter className="flex justify-end">
+                  <Link href="/availability/tutor">
+                    <Button className="bg-sky-600 hover:bg-sky-700 text-white">
+                      Editar mi disponibilidad
+                    </Button>
+                  </Link>
+                </CardFooter>
               </Card>
-            </TabsContent>
+            </TabsContent>  
           </Tabs>
-
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>

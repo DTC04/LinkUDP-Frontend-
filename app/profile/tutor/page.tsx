@@ -29,10 +29,9 @@ import {
   Save,
   Plus,
   Trash2,
-  // Upload, // No longer needed for direct URL input
+  Upload,
   Clock,
   AlertCircle,
-  Link2, // Icon for URL input
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -113,6 +112,14 @@ interface AvailabilityBlockData {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+function formatHour(iso: string) {
+  const date = new Date(iso)
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
 
 export default function TutorProfileEditPageOriginalDesign() {
   const router = useRouter();
@@ -223,17 +230,16 @@ export default function TutorProfileEditPageOriginalDesign() {
     if (pageMessage) setPageMessage(null);
   };
 
-  // Remove handleFileUpload as we are using direct URL input now.
-  // const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     setProfile((prev) => ({ ...prev, photo_url: URL.createObjectURL(file) }));
-  //     setPageMessage({
-  //       type: "success",
-  //       text: "Vista previa de imagen. Subida real no implementada.",
-  //     });
-  //   }
-  // };
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfile((prev) => ({ ...prev, photo_url: URL.createObjectURL(file) }));
+      setPageMessage({
+        type: "success",
+        text: "Vista previa de imagen. Subida real no implementada.",
+      });
+    }
+  };
 
   const handleNewExpertiseChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -496,22 +502,23 @@ export default function TutorProfileEditPageOriginalDesign() {
                     {profile.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {/* Input for Photo URL */}
-                <div className="w-full space-y-1 mt-2">
-                  <Label htmlFor="photo_url">URL de Foto de Perfil</Label>
-                  <div className="flex items-center space-x-2">
-                    <Link2 className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="photo_url"
-                      name="photo_url"
-                      type="url"
-                      placeholder="https://ejemplo.com/imagen.jpg"
-                      value={profile.photo_url || ""}
-                      onChange={handleProfileChange}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    document.getElementById("avatarUploadField")?.click()
+                  }
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Cambiar Foto
+                </Button>
+                <input
+                  type="file"
+                  id="avatarUploadField"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
@@ -751,68 +758,18 @@ export default function TutorProfileEditPageOriginalDesign() {
                     className="flex justify-between items-center border p-3 rounded-md"
                   >
                     <span className="capitalize">
-                      {block.day.toLowerCase()}: {block.startTime} -{" "}
-                      {block.endTime}
+                      {block.day.toLowerCase()}: {formatHour(block.startTime)} - {formatHour(block.endTime)}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSchedule(block.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
                   </div>
                 ))}
-              <div className="grid grid-cols-1 gap-3 rounded-md border border-dashed p-4 sm:grid-cols-4">
-                <Select
-                  name="day"
-                  value={newScheduleInput.day}
-                  onValueChange={(v) =>
-                    setNewScheduleInput((p) => ({ ...p, day: v as DayOfWeek }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Día" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(DayOfWeek).map((d) => (
-                      <SelectItem key={d} value={d} className="capitalize">
-                        {d.toLowerCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  name="startTime"
-                  type="time"
-                  value={newScheduleInput.startTime}
-                  onChange={handleNewScheduleChange}
-                />
-                <Input
-                  name="endTime"
-                  type="time"
-                  value={newScheduleInput.endTime}
-                  onChange={handleNewScheduleChange}
-                />
-                <Button
-                  onClick={addSchedule}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Añadir
-                </Button>
-              </div>
+              
             </CardContent>
-            <CardFooter>
-              <Button
-                onClick={saveProfileData}
-                disabled={isSaving}
-                className="ml-auto bg-sky-600 hover:bg-sky-700"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? "Guardando..." : "Guardar Horarios"}
-              </Button>
+            <CardFooter className="flex justify-end">
+              <Link href="/availability/tutor">
+                <Button className="bg-sky-600 hover:bg-sky-700 text-white">
+                  Editar mi Disponibilidad
+                </Button>
+              </Link>
             </CardFooter>
           </Card>
         </TabsContent>
