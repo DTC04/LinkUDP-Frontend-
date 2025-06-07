@@ -272,7 +272,7 @@ export default function EditTutoringPage() {
                           disabled={isPastSession}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.date ? format(new Date(formData.date), "PPP", { locale: es }) : <span>Selecciona una fecha</span>}
+                          {formData.date ? format(parseDateFns(formData.date as string, 'yyyy-MM-dd', new Date()), 'PPP', { locale: es }) : <span>Selecciona una fecha</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">

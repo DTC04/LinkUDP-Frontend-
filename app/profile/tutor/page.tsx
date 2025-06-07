@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { formatDateUTC } from "@/lib/utils";
 
 export enum DayOfWeek {
   LUNES = "LUNES",
@@ -109,6 +110,10 @@ interface AvailabilityBlockData {
   day: DayOfWeek;
   startTime: string;
   endTime: string;
+}
+
+function formatDate(iso: string) {
+  return formatDateUTC(iso)
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -752,17 +757,21 @@ export default function TutorProfileEditPageOriginalDesign() {
             </CardHeader>
             <CardContent className="space-y-4">
               {availabilityBlocks.length > 0 &&
-                availabilityBlocks.map((block) => (
-                  <div
-                    key={block.id}
-                    className="flex justify-between items-center border p-3 rounded-md"
-                  >
-                    <span className="capitalize">
-                      {block.day.toLowerCase()}: {formatHour(block.startTime)} - {formatHour(block.endTime)}
-                    </span>
-                  </div>
-                ))}
-              
+                availabilityBlocks
+                  .slice()
+                  .sort((a, b) =>
+                    new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+                  )
+                  .map((block) => (
+                    <div
+                      key={block.id}
+                      className="flex justify-between items-center border p-3 rounded-md"
+                    >
+                      <span>
+                        {formatDate(block.startTime)}: {formatHour(block.startTime)} - {formatHour(block.endTime)}
+                      </span>
+                    </div>
+                  ))}
             </CardContent>
             <CardFooter className="flex justify-end">
               <Link href="/availability/tutor">
