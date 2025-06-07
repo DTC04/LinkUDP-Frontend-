@@ -18,6 +18,7 @@ import { Calendar, Clock, MapPin, Plus, Users, Edit, Trash2 } from "lucide-react
 import { useAuth, type UserProfile } from "../../../hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { formatDateUTC } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,11 +62,9 @@ export default function TutorDashboardPage() {
   const [solicitudesData, setSolicitudesData] = useState<Session[]>([]);
   const [accionEnCurso, setAccionEnCurso] = useState<string | null>(null);
   const [deletingTutoringId, setDeletingTutoringId] = useState<string | number | null>(null);
-  const dayOrder = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']
-
-  const sortedAvailability = [...availabilityData].sort((a, b) => {
-    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
-  })
+  const sortedAvailability = [...availabilityData].sort(
+    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+  )
 
   const fetchSolicitudesRef = useRef<() => Promise<void>>();
   const fetchUpcomingSessionsRef = useRef<() => Promise<void>>();
@@ -109,7 +108,7 @@ export default function TutorDashboardPage() {
               area: item.course?.name || "N/A",
               description: item.description,
               students: item.bookings?.length || 0,
-              date: new Date(item.date).toLocaleDateString(),
+              date: formatDateUTC(item.date),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               status: item.status,
@@ -142,7 +141,7 @@ export default function TutorDashboardPage() {
               title: item.title,
               area: item.course?.name || "N/A",
               student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-              date: new Date(item.date).toLocaleDateString(),
+              date: formatDateUTC(item.date),
               time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
               location: item.location || "Online",
               bookingId: item.bookings?.[0]?.id, // Guardamos el ID del booking
@@ -167,7 +166,7 @@ export default function TutorDashboardPage() {
             title: item.title,
             area: item.course?.name || "N/A",
             student: item.bookings?.[0]?.studentProfile?.user?.full_name || "Estudiante por confirmar",
-            date: new Date(item.date).toLocaleDateString(),
+            date: formatDateUTC(item.date),
             time: `${new Date(item.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${new Date(item.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
             location: item.location || "Online",
           }));
@@ -628,12 +627,12 @@ export default function TutorDashboardPage() {
                 <CardContent>
                   <div className="grid gap-4">
                     {availabilityData.length > 0 ? (
-                      availabilityData.map((slot) => (
+                      sortedAvailability.map((slot) => (
                         <div key={slot.id} className="flex items-center justify-between rounded-lg border p-3">
                           <div>
-                            <p className="font-medium">{slot.day}</p>
+                            <p className="font-medium">{formatDateUTC(slot.startTime)}</p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                               {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>

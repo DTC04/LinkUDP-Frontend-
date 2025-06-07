@@ -5,21 +5,40 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { TimeSelect } from "@/components/ui/time-select";
+import { format, parse as parseDateFns } from "date-fns";
+import { es } from "date-fns/locale";
+import { formatDateUTC } from "@/lib/utils";
 
-const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+const daysMap = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+
+const formatTimeLocal = (iso: string) => {
+  const d = new Date(iso)
+  const h = d.getHours().toString().padStart(2, '0')
+  const m = d.getMinutes().toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
+const formatDateLocal = (iso: string) => {
+  const d = new Date(iso)
+  const y = d.getFullYear()
+  const m = (d.getMonth() + 1).toString().padStart(2, '0')
+  const day = d.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 export default function ManageAvailabilityPage() {
   const { getCurrentUserProfile } = useAuth();
   const router = useRouter();
   const [tutorId, setTutorId] = useState<number | null>(null);
   const [blocks, setBlocks] = useState<any[]>([]);
-  const [newBlock, setNewBlock] = useState({ day: '', start: '', end: '' });
+  const [newBlock, setNewBlock] = useState({ date: '', start: '', end: '' });
   const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ day?: string; start?: string; end?: string }>({});
+  const [editValues, setEditValues] = useState<{ date?: string; start?: string; end?: string }>({});
 
   const fetchBlocks = async (id: number) => {
     const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, { credentials: 'include' });
@@ -44,21 +63,25 @@ export default function ManageAvailabilityPage() {
 
   const handleCreate = async () => {
     if (!tutorId) return;
+    const start = new Date(`${newBlock.date}T${newBlock.start}:00`);
+    const end = new Date(`${newBlock.date}T${newBlock.end}:00`);
+    const day_of_week = daysMap[start.getUTCDay()];
+
     const res = await fetch('http://localhost:3000/disponibilidad', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tutorId,
-        day_of_week: newBlock.day,
-        start_time: new Date(`1970-01-01T${newBlock.start}:00`).toISOString(),
-        end_time: new Date(`1970-01-01T${newBlock.end}:00`).toISOString(),
+        day_of_week,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
       })
     });
     if (res.ok) {
       toast({ title: 'Bloque creado correctamente' });
       fetchBlocks(tutorId);
-      setNewBlock({ day: '', start: '', end: '' });
+      setNewBlock({ date: '', start: '', end: '' });
     } else {
       toast({ title: 'Error al crear bloque', variant: 'destructive' });
     }
@@ -68,14 +91,19 @@ export default function ManageAvailabilityPage() {
     const block = blocks.find(b => b.id === id);
     if (!block) return;
 
+    const date = editValues.date || formatDateLocal(block.start_time);
+    const start = new Date(`${date}T${editValues.start || formatTimeLocal(block.start_time)}:00`);
+    const end = new Date(`${date}T${editValues.end || formatTimeLocal(block.end_time)}:00`);
+    const day_of_week = daysMap[start.getUTCDay()];
+
     const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        day_of_week: editValues.day || block.day_of_week,
-        start_time: new Date(`1970-01-01T${editValues.start || block.start_time.slice(11, 16)}:00`).toISOString(),
-        end_time: new Date(`1970-01-01T${editValues.end || block.end_time.slice(11, 16)}:00`).toISOString(),
+        day_of_week,
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
       }),
     });
 
@@ -105,6 +133,12 @@ export default function ManageAvailabilityPage() {
         <div className="container flex h-16 items-center">
           <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
           <nav className="ml-auto flex gap-4 sm:gap-6">
+            <Link href="/tutoring" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Explorar
+            </Link>
+            <Link href="/calendar" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Calendario
+            </Link>
             <Link href="/dashboard/tutor" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Mi Dashboard
             </Link>
@@ -131,20 +165,30 @@ export default function ManageAvailabilityPage() {
           </div>
 
           <div className="my-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Select value={newBlock.day} onValueChange={(v) => setNewBlock({ ...newBlock, day: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Día de la semana" />
-              </SelectTrigger>
-              <SelectContent>
-                {days.map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Input type="time" value={newBlock.start} onChange={(e) => setNewBlock({ ...newBlock, start: e.target.value })} />
-            <Input type="time" value={newBlock.end} onChange={(e) => setNewBlock({ ...newBlock, end: e.target.value })} />
-            <Button onClick={handleCreate} disabled={!newBlock.day || !newBlock.start || !newBlock.end}>Agregar</Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start text-left font-normal ${!newBlock.date && 'text-muted-foreground'}`}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {newBlock.date ? format(parseDateFns(newBlock.date, 'yyyy-MM-dd', new Date()), 'PPP', { locale: es }) : <span>Selecciona una fecha</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={newBlock.date ? parseDateFns(newBlock.date, 'yyyy-MM-dd', new Date()) : undefined}
+                  onSelect={(date) => date && setNewBlock((prev) => ({ ...prev, date: format(date, 'yyyy-MM-dd') }))}
+                  initialFocus
+                  locale={es}
+                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                />
+              </PopoverContent>
+            </Popover>
+            <TimeSelect id="start" value={newBlock.start} onChange={(v) => setNewBlock({ ...newBlock, start: v })} />
+            <TimeSelect id="end" value={newBlock.end} onChange={(v) => setNewBlock({ ...newBlock, end: v })} />
+            <Button onClick={handleCreate} disabled={!newBlock.date || !newBlock.start || !newBlock.end}>Agregar</Button>
           </div>
 
           <div className="grid gap-4">
@@ -152,37 +196,40 @@ export default function ManageAvailabilityPage() {
               <div key={block.id} className="flex items-center justify-between border p-3 rounded-lg">
                 {editingBlockId === block.id ? (
                   <div className="flex gap-2 items-center w-full">
-                    <Select value={editValues.day || block.day_of_week} onValueChange={(v) => setEditValues((prev) => ({ ...prev, day: v }))}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue placeholder="Día" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {days.map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="time"
-                      value={editValues.start || ''}
-                      onChange={(e) => setEditValues((prev) => ({ ...prev, start: e.target.value }))}
-                      required
-                    />
-                    <Input
-                      type="time"
-                      value={editValues.end || ''}
-                      onChange={(e) => setEditValues((prev) => ({ ...prev, end: e.target.value }))}
-                      required
-                    />
-                    <Button size="sm" onClick={() => handleUpdate(block.id)}>Guardar</Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingBlockId(null)}>Cancelar</Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={`w-52 justify-start text-left font-normal ${!(editValues.date || block.start_time) && 'text-muted-foreground'}`}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {(editValues.date || block.start_time) ? format(parseDateFns(editValues.date || formatDateLocal(block.start_time), 'yyyy-MM-dd', new Date()), 'PPP', { locale: es }) : <span>Selecciona una fecha</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={parseDateFns(editValues.date || formatDateLocal(block.start_time), 'yyyy-MM-dd', new Date())}
+                          onSelect={(date) => date && setEditValues((prev) => ({ ...prev, date: format(date, 'yyyy-MM-dd') }))}
+                          initialFocus
+                          locale={es}
+                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <TimeSelect id="edit-start" value={editValues.start || formatTimeLocal(block.start_time)} onChange={(v) => setEditValues((prev) => ({ ...prev, start: v }))} />
+                    <TimeSelect id="edit-end" value={editValues.end || formatTimeLocal(block.end_time)} onChange={(v) => setEditValues((prev) => ({ ...prev, end: v }))} />
+                    <div className="ml-auto flex gap-2">
+                      <Button size="sm" onClick={() => handleUpdate(block.id)}>Guardar</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingBlockId(null)}>Cancelar</Button>
+                    </div>
                   </div>
                 ) : (
                   <>
                     <div>
-                      <p className="font-medium">{block.day_of_week}</p>
+                      <p className="font-medium">{formatDateUTC(block.start_time)}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(block.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                        {new Date(block.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                         {new Date(block.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -190,9 +237,9 @@ export default function ManageAvailabilityPage() {
                       <Button variant="outline" onClick={() => {
                         setEditingBlockId(block.id)
                         setEditValues({
-                          day: block.day_of_week,
-                          start: new Date(block.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-                          end: new Date(block.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+                          date: formatDateLocal(block.start_time),
+                          start: formatTimeLocal(block.start_time),
+                          end: formatTimeLocal(block.end_time),
                         })
                       }}>Editar</Button>
                       <Button variant="destructive" onClick={() => handleDelete(block.id)}>Eliminar</Button>

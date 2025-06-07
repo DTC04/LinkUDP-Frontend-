@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { useAuth, type UserProfile as AuthUserProfile } from "../../../hooks/use-auth"
+import { formatDateUTC } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -256,11 +257,7 @@ export default function TutoringDetailsPage() {
   }
 
   const startTimeObj = new Date(tutoring.start_time)
-  const scheduleDisplayDate = startTimeObj.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  const scheduleDisplayDate = formatDateUTC(tutoring.start_time)
   const scheduleDisplayTime = startTimeObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 
   const schedule = tutoring.schedule || `${scheduleDisplayDate} ${scheduleDisplayTime}`

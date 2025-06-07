@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronLeft, User, Mail, BookOpen, Briefcase, Calendar as CalendarIcon, University, GraduationCap, Info } from "lucide-react" // Added University, GraduationCap, Info
 import { Badge } from "@/components/ui/badge"
+import { formatDateUTC, formatTimeCL } from "@/lib/utils"
 
 interface UserProfile {
   full_name: string;
@@ -24,8 +25,8 @@ interface TutorCourse {
 interface AvailabilityBlock {
   id: number; // Or string, depending on what the backend provides (Prisma ID is usually number)
   day_of_week: string; // e.g., MONDAY, TUESDAY
-  start_time: string; // HH:MM
-  end_time: string;   // HH:MM
+  start_time: string; // ISO 8601 full datetime
+  end_time: string;   // ISO 8601 full datetime
 }
 
 // This interface represents the nested tutorProfile object within the main DTO
@@ -82,27 +83,16 @@ const dayOrder: string[] = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES",
 // We'll assume MIERCOLES for now, adjust if needed based on actual data for Wednesday.
 function formatHour(timeOrIso: string) {
   // Si es solo una hora como "08:30", construye una fecha completa en UTC
-  if (/^\d{2}:\d{2}$/.test(timeOrIso)) {
-    // Concatenar una fecha base
-    timeOrIso = `1970-01-01T${timeOrIso}:00Z`
-  }
-
-  const date = new Date(timeOrIso)
-
-  if (isNaN(date.getTime())) {
-    return "Hora inválida"
-  }
-
-  return date.toLocaleTimeString("es-CL", {
-    timeZone: "America/Santiago",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
+    if (/^\d{2}:\d{2}$/.test(timeOrIso)) {
+      // Concatenar una fecha base
+      timeOrIso = `1970-01-01T${timeOrIso}:00Z`
+    }
+  return formatTimeCL(timeOrIso)
 }
 
-
-
+function formatDate(iso: string) {
+  return formatDateUTC(iso)
+}
 
 export default function TutorPublicProfilePage() {
   const router = useRouter()
@@ -269,25 +259,21 @@ export default function TutorPublicProfilePage() {
           
           {/* Availability Section - Styled like Tutor Dashboard */}
           <div>
-            <h3 className="mb-3 text-xl font-semibold text-sky-700">Disponibilidad Semanal</h3>
+            <h3 className="mb-3 text-xl font-semibold text-sky-700">Disponibilidad</h3>
             {tutorProfile.tutorProfile?.availability && tutorProfile.tutorProfile.availability.length > 0 ? (
               <Card>
                 <CardContent className="p-4 space-y-3">
-                  {/* Sort availability by dayOrder then start_time for consistent display */}
+                  {/* Sort by start date */}
                   {tutorProfile.tutorProfile.availability
-                    .slice() // Create a shallow copy to sort without mutating state
-                    .sort((a, b) => {
-                      const dayIndexA = dayOrder.indexOf(a.day_of_week);
-                      const dayIndexB = dayOrder.indexOf(b.day_of_week);
-                      if (dayIndexA !== dayIndexB) {
-                        return dayIndexA - dayIndexB;
-                      }
-                      return a.start_time.localeCompare(b.start_time);
-                    })
+                    .slice()
+                    .sort(
+                      (a, b) =>
+                        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+                    )
                     .map((block: AvailabilityBlock) => (
                     <div key={block.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-slate-50 transition-colors">
                         <div>
-                        <p className="font-medium text-sky-700">{dayOfWeekMap[block.day_of_week] || block.day_of_week}</p>
+                        <p className="font-medium text-sky-700">{formatDate(block.start_time)}</p>
                         <p className="text-sm text-muted-foreground">
                             {formatHour(block.start_time)} - {formatHour(block.end_time)}
                         </p>
