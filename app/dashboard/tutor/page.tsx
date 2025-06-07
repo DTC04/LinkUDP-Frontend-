@@ -239,6 +239,19 @@ export default function TutorDashboardPage() {
         typeof fetchUpcomingSessionsRef.current === "function" ? fetchUpcomingSessionsRef.current() : null,
         typeof fetchMyTutoringsRef.current === "function" ? fetchMyTutoringsRef.current() : null,
       ]);
+      const updatedProfile = await getCurrentUserProfile();
+      setCurrentUserProfile(updatedProfile);
+      if (updatedProfile?.tutorProfile?.availability) {
+        setAvailabilityData(
+          updatedProfile.tutorProfile.availability.map((av: any) => ({
+            id: av.id,
+            day: av.day_of_week,
+            startTime: new Date(av.start_time),
+            endTime: new Date(av.end_time),
+            status: "available",
+          })),
+        );
+      }
 
       toast({
         title: "Tutoría confirmada",
