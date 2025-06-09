@@ -16,6 +16,8 @@
 	import { Calendar, Clock, MapPin, Search, History } from "lucide-react";
 	import { useEffect, useState } from "react";
 	import { useRouter } from "next/navigation";
+	import { formatDateUTC } from "@/lib/utils";
+
 
 	interface UserBaseData {
 	  id: number;
@@ -108,8 +110,7 @@
 	                title: booking.session?.title || 'N/A',
 	                area: booking.session?.course?.name || 'N/A',
 	                tutor: booking.session?.tutor?.user?.full_name || 'N/A',
-	                date: new Date(booking.session?.start_time).toLocaleDateString(),
-	                time: `${new Date(booking.session?.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.session?.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+	                date: formatDateUTC(booking.session?.start_time),	                time: `${new Date(booking.session?.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.session?.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
 	                location: booking.session?.location || 'Online',
 	                sessionId: booking.sessionId,
 	              })));
@@ -129,7 +130,7 @@
 	                title: booking.session?.title || 'N/A',
 	                area: booking.session?.course?.name || 'N/A',
 	                tutor: booking.session?.tutor?.user?.full_name || 'N/A',
-	                date: new Date(booking.session?.start_time).toLocaleDateString(),
+                        date: formatDateUTC(booking.session?.start_time),
 	                status: booking.status,
 	                sessionId: booking.sessionId,
 	              })));
@@ -152,8 +153,8 @@
 	              area: tutoria.course?.name || 'N/A',
 	              tutor: tutoria.tutor?.user?.full_name || 'N/A',
 	              description: tutoria.description,
-	              schedule: `${new Date(tutoria.start_time).toLocaleDateString()} ${new Date(tutoria.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-	              duration: `${((new Date(tutoria.end_time).getTime() - new Date(tutoria.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} horas`,
+                      schedule: `${formatDateUTC(tutoria.start_time)} ${new Date(tutoria.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+				  duration: `${((new Date(tutoria.end_time).getTime() - new Date(tutoria.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} horas`,
 	            })));
 	          } catch (recomError) {
 	            console.error("Error fetching recommended tutorings:", recomError);
