@@ -48,6 +48,7 @@ export default function TutoringListPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loggedInUserProfile, setLoggedInUserProfile] = useState<AuthUserProfile | null>(null) 
   const [tutoringsData, setTutoringsData] = useState<Tutoring[]>([])
+  const [recommendedTutorings, setRecommendedTutorings] = useState<Tutoring[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [dashboardUrl, setDashboardUrl] = useState<string>("/login") 
   const [profileUrl, setProfileUrl] = useState<string>("/login") 
@@ -108,6 +109,36 @@ export default function TutoringListPage() {
 
     fetchTutorings()
   }, [])
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const userId = loggedInUserProfile?.user?.id;
+        const url = `http://localhost:3000/tutorias/recomendadas`; // ✅ limpio y correcto
+
+  
+          const response = await fetch(url, {
+            credentials: "include",
+          });
+          console.log("Status de recomendación:", response.status); // 👈 Agrega esto
+          
+          if (!response.ok) throw new Error("Error al obtener recomendaciones");
+          
+  
+        const data = await response.json();
+        setRecommendedTutorings(data);
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+      }
+    };
+  
+    if (loggedInUserProfile !== null) {
+      fetchRecommendations();
+    }
+  }, [loggedInUserProfile]);
+  
+  
+
 
   const filteredTutorings = tutoringsData.filter(
     (tutoring) => {
@@ -192,6 +223,41 @@ export default function TutoringListPage() {
             </div>
           </div>
 
+
+          {recommendedTutorings.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-semibold text-sky-700 mb-4">Recomendaciones para ti</h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {recommendedTutorings.map((tutoring) => (
+                  <Link href={`/tutoring/${tutoring.id}`} key={tutoring.id}>
+                    <Card className="h-full overflow-hidden transition-all hover:border-sky-300 hover:shadow-md">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg font-medium">{tutoring.title}</CardTitle>
+                          <Badge variant="outline" className="bg-sky-50 text-sky-700">
+                            {tutoring.course?.name || "N/A"}
+                          </Badge>
+                        </div>
+                        <CardDescription className="text-xs text-muted-foreground">
+                          Tutor: {tutoring.tutor?.user?.full_name || "No asignado"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{tutoring.description}</p>
+                      </CardContent>
+                      <CardFooter className="border-t bg-muted/50 px-4 py-2">
+                        <div className="flex w-full justify-between text-xs text-muted-foreground">
+                          <span>Horario: {tutoring.schedule || formatDateUTC(tutoring.start_time) + " " + new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span>Duración: {tutoring.duration || `${((new Date(tutoring.end_time).getTime() - new Date(tutoring.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs`}</span>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredTutorings.length > 0 ? (
               filteredTutorings.map((tutoring) => (
@@ -208,6 +274,7 @@ export default function TutoringListPage() {
                       Tutor: {tutoring.tutor?.user?.full_name || "No asignado"}
                     </CardDescription>
                   </CardHeader>
+
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{tutoring.description}</p>
                   </CardContent>
