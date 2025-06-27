@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeft, Save, Plus, Trash2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import RequireEmailVerified from "@/components/RequireEmailVerified";
 
 // --- Interfaces (SIN CAMBIOS) ---
 interface UserBaseData {
@@ -283,7 +284,8 @@ export default function StudentProfilePage() {
   }
 
   return (
-    // Contenedor principal y título, similar al del tutor
+    <RequireEmailVerified>
+    {/* Contenedor principal y título, similar al del tutor */}
     <div className="container py-10">
       {" "}
       {/* Estilo de contenedor del tutor */}
@@ -561,5 +563,6 @@ export default function StudentProfilePage() {
         </div>
       </div>
     </div>
+    </RequireEmailVerified>
   );
 }

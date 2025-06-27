@@ -12,13 +12,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function StudentOnboardingPage() {
   const router = useRouter()
+  const { updateStudentProfile, loading, error } = useAuth()
   const [formData, setFormData] = useState({
     university: "",
-    degree: "",
-    year: "",
+    career: "",
+    study_year: 0,
     interests: "",
     bio: "",
   })
@@ -29,13 +31,19 @@ export default function StudentOnboardingPage() {
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: name === 'study_year' ? parseInt(value, 10) : value }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Perfil de estudiante creado:", formData)
-    router.push("/dashboard/student")
+    const result = await updateStudentProfile(formData);
+
+    if (result) {
+      console.log("Perfil de estudiante creado:", result)
+      router.push("/dashboard/student")
+    } else {
+      console.error("Error al crear el perfil del estudiante")
+    }
   }
 
   return (
@@ -71,9 +79,9 @@ export default function StudentOnboardingPage() {
               <Label htmlFor="degree">Carrera</Label>
               <Input
                 id="degree"
-                name="degree"
+                name="career"
                 placeholder="Ej: Ingeniería Civil"
-                value={formData.degree}
+                value={formData.career}
                 onChange={handleChange}
                 required
               />
@@ -123,8 +131,8 @@ export default function StudentOnboardingPage() {
             <Button variant="outline" type="button" onClick={() => router.push("/")}>
               Omitir por ahora
             </Button>
-            <Button type="submit" className="bg-sky-600 hover:bg-sky-700">
-              Guardar y continuar
+            <Button type="submit" className="bg-sky-600 hover:bg-sky-700" disabled={loading}>
+              {loading ? "Guardando..." : "Guardar y continuar"}
             </Button>
           </CardFooter>
         </form>

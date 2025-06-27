@@ -228,17 +228,6 @@ export default function EditTutoringPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <Link href="/dashboard/tutor" className="mr-4">
-            <Button variant="ghost" size="icon">
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-          {/* Add nav items if needed */}
-        </div>
-      </header>
       <main className="flex-1 container py-10">
         <div className="mx-auto max-w-2xl">
           <Card>
