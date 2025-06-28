@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import VerifyClient from './VerifyClient';
+import ResetPassword from './ResetPassword';
 
 export default function Page() {
   return (
     <Suspense fallback={<p>Cargando...</p>}>
-      <VerifyClient />
+      <ResetPassword />
     </Suspense>
   );
 }
