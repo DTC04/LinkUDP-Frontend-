@@ -3,7 +3,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, createContext, useContext } from "react";
 
 // --- Interfaces Base ---
 export interface User {
@@ -112,6 +112,8 @@ interface UpdateTutorSpecificProfilePayload {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+export const AuthContext = createContext<any>(null);
 
 export function useAuth() {
   const router = useRouter();

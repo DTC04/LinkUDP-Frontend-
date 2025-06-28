@@ -12,12 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Plus, Users, Edit, Trash2 } from "lucide-react"; // Added Edit and Trash2
+import { Calendar, Clock, MapPin, Plus, Users, Edit, Trash2, LogOut } from "lucide-react"; // Added Edit and Trash2
 import { useAuth, type UserProfile } from "../../../hooks/use-auth";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDateUTC } from "@/lib/utils";
 import {
   AlertDialog,
@@ -52,7 +53,7 @@ interface Session {
 
 export default function TutorDashboardPage() {
   const router = useRouter();
-  const { getCurrentUserProfile, loading: authLoading } = useAuth();
+  const { getCurrentUserProfile, loading: authLoading, logout } = useAuth();
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
   const [upcomingSessionsData, setUpcomingSessionsData] = useState<Session[]>([]);
@@ -208,6 +209,13 @@ export default function TutorDashboardPage() {
 
   const tutorName = currentUserProfile?.user?.full_name || "Tutor";
 
+  const getInitials = (name?: string) => {
+    if (!name) return "?";
+    const names = name.split(" ");
+    const initials = names.map((n) => n[0]).join("");
+    return initials.toUpperCase().slice(0, 2);
+  };
+
   // Función para aceptar solicitud (confirma el booking)
   const handleAceptarSolicitud = async (solicitudId: string | number) => {
     setAccionEnCurso(`aceptar-${solicitudId}`);
@@ -353,25 +361,6 @@ export default function TutorDashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
-            <Link href="/tutoring" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Explorar
-            </Link>
-            <Link href="/calendar" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Calendario
-            </Link>
-            <Link href="/dashboard/tutor" className="text-sm font-medium text-foreground">
-              Mi Dashboard
-            </Link>
-            <Link href="/profile/tutor" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Mi Perfil
-            </Link>
-          </nav>
-        </div>
-      </header>
       <main className="flex-1">
         <div className="container px-4 py-10 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

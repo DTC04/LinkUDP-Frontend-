@@ -36,6 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDateUTC } from "@/lib/utils";
+import RequireEmailVerified from "@/components/RequireEmailVerified";
 
 export enum DayOfWeek {
   LUNES = "LUNES",
@@ -332,12 +333,6 @@ export default function TutorProfileEditPageOriginalDesign() {
   const saveProfileData = async () => {
     setPageMessage(null);
     setIsSaving(true);
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setPageMessage({ type: "error", text: "No autenticado." });
-      setIsSaving(false);
-      return;
-    }
 
     let allSuccess = true;
 
@@ -351,8 +346,8 @@ export default function TutorProfileEditPageOriginalDesign() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify(generalPayload),
       });
       const generalData = await generalRes.json();
@@ -395,8 +390,8 @@ export default function TutorProfileEditPageOriginalDesign() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify(specificPayload),
         });
         const specificData = await specificRes.json();
@@ -449,9 +444,10 @@ export default function TutorProfileEditPageOriginalDesign() {
   }
 
   return (
-    <div className="container py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center">
+    <RequireEmailVerified>
+      <div className="container py-10">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center">
           <Link href="/dashboard/tutor" className="mr-4">
             <Button variant="ghost" size="icon">
               <ChevronLeft className="h-5 w-5" />
@@ -784,5 +780,6 @@ export default function TutorProfileEditPageOriginalDesign() {
         </TabsContent>
       </Tabs>
     </div>
+    </RequireEmailVerified>
   );
 }
