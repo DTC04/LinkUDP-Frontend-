@@ -129,25 +129,6 @@ export default function ManageAvailabilityPage() {
   };
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
-            <Link href="/tutoring" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Explorar
-            </Link>
-            <Link href="/calendar" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Calendario
-            </Link>
-            <Link href="/dashboard/tutor" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Mi Dashboard
-            </Link>
-            <Link href="/profile/tutor" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Mi Perfil
-            </Link>
-          </nav>
-        </div>
-      </header>
       <main className="flex-1">
         <div className="container px-4 py-10 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

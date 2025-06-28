@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Filter, Plus } from "lucide-react"
+import { Filter, Plus, Bookmark } from "lucide-react"
 import { useEffect, useState, useCallback } from "react"
 // import { jwtDecode } from "jwt-decode"; // Eliminado
 import { useAuth } from "@/hooks/use-auth"
+import RequireEmailVerified from "@/components/RequireEmailVerified";
 import type { UserProfile as AuthUserProfile } from "@/hooks/use-auth"
 import { formatDateUTC } from "@/lib/utils"
 
@@ -52,7 +53,36 @@ export default function TutoringListPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [dashboardUrl, setDashboardUrl] = useState<string>("/login") 
   const [profileUrl, setProfileUrl] = useState<string>("/login") 
-  const { getCurrentUserProfile, logout } = useAuth() 
+  const { getCurrentUserProfile, logout } = useAuth()
+  const [savedTutorings, setSavedTutorings] = useState<string[]>([]);
+
+  const handleSave = async (tutoringId: string) => {
+    if (!isLoggedIn) {
+      // Or redirect to login
+      return;
+    }
+
+    const isSaved = savedTutorings.includes(tutoringId);
+    const method = isSaved ? "DELETE" : "POST";
+    const url = `http://localhost:3000/tutorias/${tutoringId}/save`;
+
+    try {
+      const response = await fetch(url, {
+        method,
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        if (isSaved) {
+          setSavedTutorings(savedTutorings.filter((id) => id !== tutoringId));
+        } else {
+          setSavedTutorings([...savedTutorings, tutoringId]);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving tutoring:", error);
+    }
+  };
 
   const fetchProfileAndSetLoginStatus = useCallback(async () => {
     if (typeof window !== "undefined") {
@@ -107,8 +137,25 @@ export default function TutoringListPage() {
       }
     }
 
+    const fetchSavedTutorings = async () => {
+      if (isLoggedIn) {
+        try {
+          const response = await fetch("http://localhost:3000/tutorias/me/saved", {
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setSavedTutorings(data.map((t: any) => t.sessionId));
+          }
+        } catch (error) {
+          console.error("Error fetching saved tutorings:", error);
+        }
+      }
+    };
+
     fetchTutorings()
-  }, [])
+    fetchSavedTutorings()
+  }, [isLoggedIn])
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -152,51 +199,7 @@ export default function TutoringListPage() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
-            {isLoggedIn ? (
-              <>
-                <Link
-                  href="/tutoring"
-                  className="text-sm font-medium text-foreground border-b-2 border-sky-600 pb-1"
-                >
-                  Explorar
-                </Link>
-                <Link
-                  href="/calendar"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                  Calendario
-                </Link>
-                <Link
-                  href={dashboardUrl}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                  Mi Dashboard
-                </Link>
-                <Link
-                  href={profileUrl} 
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                  Mi Perfil
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Iniciar Sesión
-                </Link>
-                <Link href="/register" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Registrarse
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+    <RequireEmailVerified>
       <main className="flex-1">
         <div className="container px-4 py-10 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -278,11 +281,23 @@ export default function TutoringListPage() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground line-clamp-2">{tutoring.description}</p>
                   </CardContent>
-                    <CardFooter className="border-t bg-muted/50 px-4 py-2">
+                    <CardFooter className="border-t bg-muted/50 px-4 py-2 flex justify-between items-center">
                     <div className="flex w-full justify-between text-xs text-muted-foreground">
                       <span>Horario: {tutoring.schedule || formatDateUTC(tutoring.start_time) + " " + new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       <span>Duración: {tutoring.duration || `${((new Date(tutoring.end_time).getTime() - new Date(tutoring.start_time).getTime()) / (1000 * 60 * 60)).toFixed(1)} hrs`}</span>
                     </div>
+                    {loggedInUserProfile && (loggedInUserProfile.user.role === "STUDENT" || loggedInUserProfile.user.role === "BOTH") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleSave(tutoring.id);
+                        }}
+                      >
+                        <Bookmark className={`h-5 w-5 ${savedTutorings.includes(tutoring.id) ? "text-sky-600 fill-sky-600" : "text-muted-foreground"}`} />
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               </Link>
@@ -302,6 +317,6 @@ export default function TutoringListPage() {
           </p>
         </div>
       </footer>
-    </div>
+    </RequireEmailVerified>
   )
 }
