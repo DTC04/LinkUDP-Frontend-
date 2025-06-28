@@ -13,9 +13,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronLeft, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function TutorOnboardingPage() {
   const router = useRouter()
+  const { updateTutorProfile, loading, error } = useAuth()
   const [formData, setFormData] = useState({
     university: "",
     degree: "",
@@ -64,10 +66,21 @@ export default function TutorOnboardingPage() {
     setCourses(courses.filter((course) => course.id !== id))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Perfil de tutor creado:", { ...formData, courses })
-    router.push("/dashboard/tutor")
+    const coursesWithNumericIds = courses.map(course => ({
+      ...course,
+      courseId: course.id 
+    }));
+
+    const result = await updateTutorProfile({ ...formData, courses: coursesWithNumericIds });
+
+    if (result) {
+      console.log("Perfil de tutor creado:", result)
+      router.push("/dashboard/tutor")
+    } else {
+      console.error("Error al crear el perfil del tutor")
+    }
   }
 
   return (
@@ -225,8 +238,8 @@ export default function TutorOnboardingPage() {
             <Button variant="outline" type="button" onClick={() => router.push("/")}>
               Omitir por ahora
             </Button>
-            <Button type="submit" className="bg-sky-600 hover:bg-sky-700">
-              Guardar y continuar
+            <Button type="submit" className="bg-sky-600 hover:bg-sky-700" disabled={loading}>
+              {loading ? "Guardando..." : "Guardar y continuar"}
             </Button>
           </CardFooter>
         </form>

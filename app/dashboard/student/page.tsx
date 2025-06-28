@@ -13,9 +13,11 @@
 	import { Badge } from "@/components/ui/badge";
 	import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; 
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-	import { Calendar, Clock, MapPin, Search, History } from "lucide-react";
+	import { Calendar, Clock, MapPin, Search, History, LogOut, Bookmark } from "lucide-react";
 	import { useEffect, useState } from "react";
 	import { useRouter } from "next/navigation";
+	import { useAuth } from "@/hooks/use-auth";
+	import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 	import { formatDateUTC } from "@/lib/utils";
 
 
@@ -55,18 +57,43 @@
 	  interests: CourseInterestData[]; 
 	}
 
+	interface SavedTutoring {
+	  id: string;
+	  title: string;
+	  description: string;
+	  date: string;
+	  start_time: string;
+	  end_time: string;
+	  location?: string;
+	  notes?: string;
+	  status: string;
+	  tutor: {
+	    user: {
+	      full_name: string;
+	    };
+	  };
+	  course: {
+	    name: string;
+	  };
+	  schedule?: string;
+	  duration?: string;
+	}
+
 	export default function StudentDashboardPage() {
 	  const router = useRouter();
+	  const { logout } = useAuth();
 	  const [dashboardProfile, setDashboardProfile] =
 	    useState<DashboardProfileState | null>(null);
 
 	  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
 	  const [historyBookings, setHistoryBookings] = useState<any[]>([]);
 	  const [recommendedTutoringsData, setRecommendedTutoringsData] = useState<any[]>([]);
+	  const [savedTutorings, setSavedTutorings] = useState<SavedTutoring[]>([]);
 	  
 	  const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 	  const [loadingBookings, setLoadingBookings] = useState<boolean>(false);
 	  const [loadingRecommendations, setLoadingRecommendations] = useState<boolean>(false);
+	  const [loadingSaved, setLoadingSaved] = useState<boolean>(false);
 	  const [error, setError] = useState<string | null>(null);
 
 
@@ -162,6 +189,21 @@
 	            setLoadingRecommendations(false);
 	          }
 
+	          setLoadingSaved(true);
+	          try {
+	            const savedRes = await fetch(`http://localhost:3000/tutorias/me/saved`, { 
+	              credentials: "include",
+	            });
+	            if (savedRes.ok) {
+	              const savedData = await savedRes.json();
+	              setSavedTutorings(savedData.map((t: any) => t.session));
+	            }
+	          } catch (savedError) {
+	            console.error("Error fetching saved tutorings:", savedError);
+	          } finally {
+	            setLoadingSaved(false);
+	          }
+
 	        } else {
 	          setError("Este dashboard es para estudiantes.");
 	        }
@@ -214,37 +256,6 @@
 
 	  return (
 	    <div className="flex min-h-screen flex-col">
-	      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-		<div className="container flex h-16 items-center">
-		  <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-		  <nav className="ml-auto flex gap-4 sm:gap-6">
-		    <Link
-		      href="/tutoring"
-		      className="text-sm font-medium text-muted-foreground hover:text-foreground"
-		    >
-		      Explorar
-		    </Link>
-		    <Link
-		      href="/calendar"
-		      className="text-sm font-medium text-muted-foreground hover:text-foreground"
-		    >
-		      Calendario
-		    </Link>
-		    <Link
-		      href="/dashboard/student"
-		      className="text-sm font-medium text-foreground border-b-2 border-sky-600 pb-1"
-		    >
-		      Mi Dashboard
-		    </Link>
-		    <Link
-		      href="/profile/student"
-		      className="text-sm font-medium text-muted-foreground hover:text-foreground"
-		    >
-		      Mi Perfil
-		    </Link>
-		  </nav>
-		</div>
-	      </header>
 	      <main className="flex-1">
 		<div className="container px-4 py-10 md:px-6">
 		  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -267,10 +278,11 @@
 		  </div>
 
 		  <Tabs defaultValue="upcoming" className="mt-8">
-		    <TabsList className="grid w-full grid-cols-3 md:w-auto">
+		    <TabsList className="grid w-full grid-cols-4 md:w-auto">
 		      <TabsTrigger value="upcoming">Próximas Tutorías</TabsTrigger>
 		      <TabsTrigger value="recommended">Recomendados</TabsTrigger>
 		      <TabsTrigger value="history">Historial</TabsTrigger>
+		      <TabsTrigger value="saved">Guardadas</TabsTrigger>
 		    </TabsList>
 		    <TabsContent value="upcoming" className="mt-4">
 		      {loadingBookings ? <p>Cargando próximas tutorías...</p> : upcomingBookings.length > 0 ? (
@@ -439,6 +451,80 @@
 		              Tu historial de tutorías aparecerá aquí una vez que hayas
 		              completado o cancelado alguna sesión.
 		            </p>
+		          </CardContent>
+		        </Card>
+		      )}
+		    </TabsContent>
+		    <TabsContent value="saved" className="mt-4">
+		      {loadingSaved ? <p>Cargando tutorías guardadas...</p> : savedTutorings.length > 0 ? (
+		        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+		          {savedTutorings.map((tutoring) => (
+		            <Card key={tutoring.id} className="h-full overflow-hidden">
+		              <CardHeader className="pb-2">
+		                <div className="flex items-center justify-between">
+		                  <CardTitle className="text-lg font-medium">
+		                    {tutoring.title}
+		                  </CardTitle>
+		                  <Badge
+		                    variant="outline"
+		                    className="bg-sky-50 text-sky-700"
+		                  >
+		                    {tutoring.course?.name || "N/A"}
+		                  </Badge>
+		                </div>
+		                <CardDescription className="flex items-center gap-1 text-xs">
+		                  <Avatar className="h-5 w-5">
+		                    <AvatarFallback>
+		                      {tutoring.tutor?.user?.full_name?.charAt(0) || 'T'}
+		                    </AvatarFallback>
+		                  </Avatar>
+		                  {tutoring.tutor?.user?.full_name}
+		                </CardDescription>
+		              </CardHeader>
+		              <CardContent>
+		                <div className="grid gap-2">
+		                  <div className="flex items-center gap-2 text-sm">
+		                    <Calendar className="h-4 w-4 text-sky-600" />
+		                    <span>{formatDateUTC(tutoring.start_time)}</span>
+		                  </div>
+		                  <div className="flex items-center gap-2 text-sm">
+		                    <Clock className="h-4 w-4 text-sky-600" />
+		                    <span>{new Date(tutoring.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(tutoring.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+		                  </div>
+		                  <div className="flex items-center gap-2 text-sm">
+		                    <MapPin className="h-4 w-4 text-sky-600" />
+		                    <span>{tutoring.location || "Online"}</span>
+		                  </div>
+		                </div>
+		              </CardContent>
+		              <CardFooter>
+		                <Link
+		                  href={`/tutoring/${tutoring.id}`} 
+		                  className="w-full"
+		                >
+		                  <Button variant="outline" className="w-full">
+		                    Ver detalles
+		                  </Button>
+		                </Link>
+		              </CardFooter>
+		            </Card>
+		          ))}
+		        </div>
+		      ) : (
+		        <Card>
+		          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+		            <Bookmark className="mb-4 h-12 w-12 text-muted-foreground" />
+		            <h3 className="mb-2 text-xl font-medium">
+		              No tienes tutorías guardadas
+		            </h3>
+		            <p className="mb-4 text-muted-foreground">
+		              Guarda tutorías para verlas más tarde.
+		            </p>
+		            <Link href="/tutoring">
+		              <Button className="bg-sky-600 hover:bg-sky-700">
+		                Explorar Tutorías
+		              </Button>
+		            </Link>
 		          </CardContent>
 		        </Card>
 		      )}

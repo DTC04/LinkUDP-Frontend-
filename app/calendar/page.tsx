@@ -13,15 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog" 
-import { CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { CalendarIcon, ChevronLeft, ChevronRight, Plus, User, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { format as formatDateFns, parse as parseDateFns } from "date-fns" // Import parse
 import { useRouter } from "next/navigation"; // Importar useRouter
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { useAuth, type UserProfile as AuthUserProfile } from "@/hooks/use-auth" // Importar useAuth
-
-// y se confiará en los estilos de los componentes de LinkUPD o se aplicarán clases de utilidad de LinkUPD.
+import RequireEmailVerified from "@/components/RequireEmailVerified";
 
 interface TutoriaEvent {
   id: string | number;
@@ -379,29 +378,49 @@ export default function CalendarPage() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="w-[95vw] max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-base">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle> {/* Usar selectedEvent.title */}
-              <DialogDescription className="text-sm">Detalles de la tutoría</DialogDescription>
+              <DialogTitle className="text-lg text-sky-700">{selectedEvent?.title || "Detalle del Evento"}</DialogTitle>
+              <DialogDescription>Detalles de la tutoría</DialogDescription>
             </DialogHeader>
             {selectedEvent && (
-              <div className="space-y-3">
-                <p><strong>Curso:</strong> {selectedEvent.courseName || "No especificado"}</p>
-                <p><strong>Tutor:</strong> {selectedEvent.tutorName || "No especificado"}</p>
-                {/* Correctly parse the YYYY-MM-DD string as a local date before formatting */}
-                <p><strong>Fecha:</strong> {formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy")}</p>
-                <p><strong>Hora:</strong> {selectedEvent.start_time} - {selectedEvent.end_time}</p>
-                {/* Aquí podrías añadir un enlace a la página de detalles de la tutoría si existe */}
-                <Link href={`/tutoring/${selectedEvent.id}`} passHref>
-                   <Button variant="link" size="sm" className="p-0 h-auto">Ver detalles completos</Button>
-                </Link>
-              </div>
+              <Card className="border-none shadow-none">
+                <CardContent className="p-0 pt-4">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <CalendarIcon className="h-5 w-5 text-sky-600 mt-1" />
+                      <div>
+                        <p className="font-semibold">Fecha y Hora</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDateFns(parseDateFns(selectedEvent.date, 'yyyy-MM-dd', new Date()), "dd/MM/yyyy")} de {selectedEvent.start_time} a {selectedEvent.end_time}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <User className="h-5 w-5 text-sky-600 mt-1" />
+                      <div>
+                        <p className="font-semibold">Tutor</p>
+                        <p className="text-sm text-muted-foreground">{selectedEvent.tutorName || "No especificado"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <BookOpen className="h-5 w-5 text-sky-600 mt-1" />
+                      <div>
+                        <p className="font-semibold">Curso</p>
+                        <p className="text-sm text-muted-foreground">{selectedEvent.courseName || "No especificado"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-4">
               <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                 Cerrar
               </Button>
-              {/* <Button size="sm" variant="default" className="w-full sm:w-auto">
-                Ver Más
-              </Button> */}
+              <Link href={`/tutoring/${selectedEvent?.id}`} passHref>
+                <Button size="sm" className="w-full sm:w-auto bg-sky-600 hover:bg-sky-700">
+                  Ver Detalles
+                </Button>
+              </Link>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -411,38 +430,7 @@ export default function CalendarPage() {
 
   // Desktop layout
   return (
-    <div className="flex min-h-screen flex-col"> {/* Envoltura principal para header y footer */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
-          <span className="text-xl font-bold text-sky-600 cursor-default select-none">LINKUDP</span>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
-            <Link
-              href="/tutoring"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Explorar
-            </Link>
-            <Link
-              href="/calendar"
-              className="text-sm font-medium text-foreground border-b-2 border-sky-600 pb-1" // Activo
-            >
-              Calendario
-            </Link>
-            <Link
-              href={dashboardUrl}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Mi Dashboard
-            </Link>
-            <Link
-              href={profileUrl}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Mi Perfil
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <RequireEmailVerified>
       <main className="flex-1"> {/* Contenido principal del calendario */}
         <motion.div
           className="space-y-6 p-6"
@@ -593,6 +581,6 @@ export default function CalendarPage() {
           </p>
         </div>
       </footer>
-    </div>
+    </RequireEmailVerified>
   )
 }
