@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Loader } from 'lucide-react';
 
-function VerifyComponent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -33,6 +32,7 @@ function VerifyComponent() {
       });
   }, [searchParams]);
 
+export default function Page() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
@@ -67,10 +67,3 @@ function VerifyComponent() {
   );
 }
 
-export default function VerifyPage() {
-  return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      <VerifyComponent />
-    </Suspense>
-  );
-}
