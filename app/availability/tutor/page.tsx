@@ -13,6 +13,7 @@ import { TimeSelect } from "@/components/ui/time-select";
 import { format, parse as parseDateFns } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatDateUTC } from "@/lib/utils";
+// import { StarRating } from "@/components/ui/star-rating";
 
 const daysMap = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
@@ -39,6 +40,7 @@ export default function ManageAvailabilityPage() {
   const [newBlock, setNewBlock] = useState({ date: '', start: '', end: '' });
   const [editingBlockId, setEditingBlockId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<{ date?: string; start?: string; end?: string }>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const fetchBlocks = async (id: number) => {
     const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, { credentials: 'include' });
@@ -230,6 +232,17 @@ export default function ManageAvailabilityPage() {
               </div>
             ))}
           </div>
+
+          {/* StarRating component removed due to missing module */}
+          {isFinished ? (
+            <div className="flex items-center gap-2">
+              <span>¡Has finalizado!</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span>Solo disponible al finalizar</span>
+            </div>
+          )}
         </div>
       </main>
       <footer className="border-t py-6 md:py-0">

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -10,16 +10,33 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Plus, Users, Edit, Trash2, LogOut } from "lucide-react"; // Added Edit and Trash2
-import { useAuth, type UserProfile } from "../../../hooks/use-auth";
-import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { formatDateUTC } from "@/lib/utils";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Users,
+  Edit,
+  Trash2,
+  LogOut,
+  Star,
+} from "lucide-react"
+import { useAuth, type UserProfile } from "../../../hooks/use-auth"
+import { toast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { formatDateUTC } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +47,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"; // Added AlertDialog components
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import React from "react"
+
 
 interface Session {
   id: string | number;
@@ -70,6 +96,8 @@ export default function TutorDashboardPage() {
   const fetchSolicitudesRef = useRef<() => Promise<void>>();
   const fetchUpcomingSessionsRef = useRef<() => Promise<void>>();
   const fetchMyTutoringsRef = useRef<() => Promise<void>>();
+  const [selectedTutoringForStudents, setSelectedTutoringForStudents] = useState<any | null>(null)
+  
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -378,6 +406,7 @@ export default function TutorDashboardPage() {
             </div>
           </div>
 
+            
           <Tabs defaultValue="upcoming" className="mt-8">
             <TabsList className="grid w-full grid-cols-4 md:w-auto">
               <TabsTrigger value="upcoming">Próximas Sesiones</TabsTrigger>
@@ -556,6 +585,18 @@ export default function TutorDashboardPage() {
                         </div>
                       </CardContent>
                       <CardFooter className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="flex-1 bg-transparent"
+                            onClick={() => setSelectedTutoringForStudents({
+                              ...tutoring,
+                              end_time: tutoring.end_time ? new Date(tutoring.end_time) : null,
+                            })}
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            Ver estudiantes
+                          </Button>
+
                         <Button variant="outline" className="flex-1" onClick={() => router.push(`/tutoring/${tutoring.id}/edit`)}>
                           <Edit className="mr-2 h-4 w-4" /> Editar
                         </Button>
@@ -702,6 +743,15 @@ export default function TutorDashboardPage() {
           </div>
         </div>
       </main>
+
+      {selectedTutoringForStudents && (
+      <StudentsModal
+        tutoring={selectedTutoringForStudents}
+        isOpen={!!selectedTutoringForStudents}
+        onClose={() => setSelectedTutoringForStudents(null)}
+      />
+    )}
+
       <footer className="border-t py-6 md:py-0">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
@@ -712,3 +762,231 @@ export default function TutorDashboardPage() {
     </div>
   );
 }
+
+function StarRating({
+  rating,
+  onRatingChange,
+  disabled = false,
+  readonly = false,
+}: {
+  rating: number
+  onRatingChange?: (rating: number) => void
+  disabled?: boolean
+  readonly?: boolean
+}) {
+  const [hoverRating, setHoverRating] = useState(0)
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          className={`transition-all duration-200 ${
+            disabled || readonly ? "cursor-not-allowed" : "cursor-pointer hover:scale-110"
+          }`}
+          disabled={disabled || readonly}
+          onMouseEnter={() => !disabled && !readonly && setHoverRating(star)}
+          onMouseLeave={() => !disabled && !readonly && setHoverRating(0)}
+          onClick={() => !disabled && !readonly && onRatingChange?.(star)}
+        >
+          <Star
+            className={`h-6 w-6 transition-colors duration-200 ${
+              star <= (hoverRating || rating)
+                ? disabled
+                  ? "fill-gray-300 text-gray-300"
+                  : "fill-yellow-400 text-yellow-400"
+                : disabled
+                ? "text-gray-300"
+                : "text-gray-300 hover:text-yellow-400"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function StudentsModal({
+  tutoring,
+  isOpen,
+  onClose,
+}: {
+  tutoring: any
+  isOpen: boolean
+  onClose: () => void
+}) {
+  const [students, setStudents] = useState<
+    { id: string | number; name: string; email: string; averageRating?: number; rating?: number; hasBeenRated?: boolean }[]
+  >([])
+  const [loading, setLoading] = useState(false)
+  const [ratingStudent, setRatingStudent] = useState<string | number | null>(null)
+  const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    if (!tutoring?.end_time) return;
+
+    // Calcula si la tutoría ya terminó (usando UTC)
+    const checkFinished = () => {
+      const endTime = new Date(tutoring.end_time).getTime();
+      const now = Date.now();
+      setIsFinished(now >= endTime);
+    };
+
+    checkFinished(); // Verifica al montar
+
+    // Opcional: actualiza cada minuto por si el modal queda abierto
+    const interval = setInterval(checkFinished, 60000);
+
+    return () => clearInterval(interval);
+  }, [tutoring?.end_time])
+
+  useEffect(() => {
+    if (isOpen && tutoring.id) {
+      fetchStudents()
+    }
+  }, [isOpen, tutoring.id])
+
+  const fetchStudents = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`http://localhost:3000/tutorias/${tutoring.id}/students`, {
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Error al cargar estudiantes")
+      const data = await response.json()
+      // Defensive: ensure data is always an array of objects with id, name, email
+      if (Array.isArray(data)) {
+        setStudents(
+          data
+            .filter((s) => s && (s.id !== undefined && s.id !== null))
+            .map((s) => ({
+              id: s.id,
+              name: typeof s.name === "string" && s.name.trim() ? s.name : "Estudiante sin nombre",
+              email: typeof s.email === "string" && s.email.trim() ? s.email : "Sin email",
+              rating: typeof s.rating === "number" ? s.rating : undefined,
+              averageRating: typeof s.averageRating === "number" ? s.averageRating : 0, // <--- AGREGA ESTO
+              hasBeenRated: !!s.hasBeenRated,
+            }))
+        )
+      } else {
+        setStudents([])
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los estudiantes",
+        variant: "destructive",
+      })
+      setStudents([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRateStudent = async (studentId: string | number, rating: number) => {
+    setRatingStudent(studentId)
+    try {
+      const response = await fetch(`http://localhost:3000/tutorias/${tutoring.id}/rate-student`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ studentId, rating }),
+      })
+      if (!response.ok) throw new Error("Error al calificar estudiante")
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.id === studentId ? { ...student, rating, hasBeenRated: true } : student
+        )
+      )
+      toast({
+        title: "Calificación enviada",
+        description: "El estudiante ha sido calificado exitosamente",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la calificación",
+        variant: "destructive",
+      })
+    } finally {
+      setRatingStudent(null)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Estudiantes - {tutoring.title}
+          </DialogTitle>
+          <DialogDescription>
+            {isFinished
+              ? "Califica la participación de cada estudiante en esta tutoría"
+              : "Lista de estudiantes inscritos. Las calificaciones estarán disponibles al finalizar la tutoría."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+            </div>
+          ) : Array.isArray(students) && students.length > 0 ? (
+            students.map((student) => {
+              if (!student || student.id === undefined || student.id === null) return null;
+              const safeName = typeof student.name === "string" && student.name.trim() ? student.name : "Estudiante sin nombre";
+              const safeEmail = typeof student.email === "string" && student.email.trim() ? student.email : "Sin email";
+              return (
+                <div key={student.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  {/* Mostrar datos del estudiante */}
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarFallback>
+                        {safeName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{safeName}</p>
+                      <p className="text-xs text-yellow-600 font-semibold">
+                        ⭐ Promedio: {typeof student.averageRating === "number" && !isNaN(student.averageRating) ? student.averageRating.toFixed(1) : "0.0"} / 5
+                      </p>
+                      <p className="text-sm text-muted-foreground">{safeEmail}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    {student.hasBeenRated ? (
+                      <>
+                        <StarRating rating={student.rating || 0} readonly />
+                        <span className="text-xs text-green-600 font-medium">Ya calificaste a este estudiante</span>
+                      </>
+                    ) : (
+                      <>
+                        <StarRating
+                          rating={0}
+                          onRatingChange={(rating) => handleRateStudent(student.id, rating)}
+                          disabled={ratingStudent === student.id}
+                        />
+                        <span className="text-xs text-muted-foreground">Calificar estudiante</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No hay estudiantes inscritos en esta tutoría</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
