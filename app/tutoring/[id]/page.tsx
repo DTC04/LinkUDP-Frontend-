@@ -86,6 +86,7 @@ export default function TutoringDetailsPage() {
   const [bookingMessage, setBookingMessage] = useState<string | null>(null)
   const [hasBooked, setHasBooked] = useState(false)
   const [currentBookingId, setCurrentBookingId] = useState<number | null>(null)
+  const [isFinished, setIsFinished] = useState(false)
 
   const fetchTutoringDetails = async () => {
     setLoading(true)
@@ -151,6 +152,18 @@ export default function TutoringDetailsPage() {
   useEffect(() => {
     fetchTutoringDetails()
   }, [params.id])
+
+  useEffect(() => {
+    if (!tutoring?.end_time) return
+    const checkFinished = () => {
+      const endTime = new Date(tutoring.end_time).getTime()
+      const now = Date.now()
+      setIsFinished(now >= endTime && tutoring.status === "CONFIRMED")
+    }
+    checkFinished()
+    const interval = setInterval(checkFinished, 60000)
+    return () => clearInterval(interval)
+  }, [tutoring?.end_time, tutoring?.status])
 
   const handleBookTutoring = async () => {
     if (!tutoring) return
@@ -616,4 +629,10 @@ function ContactForm({
       </DialogFooter>
     </form>
   )
+}
+
+function canRateTutoring(tutoring: any) {
+  if (!tutoring?.end_time || !tutoring?.status) return false;
+  const finished = new Date(tutoring.end_time).getTime() <= Date.now();
+  return tutoring.status === "CONFIRMED" && finished;
 }

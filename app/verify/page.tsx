@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Loader } from 'lucide-react';
 
+export default function Page() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -32,7 +33,6 @@ import { CheckCircle2, XCircle, Loader } from 'lucide-react';
       });
   }, [searchParams]);
 
-export default function Page() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
@@ -66,4 +66,3 @@ export default function Page() {
     </div>
   );
 }
-
