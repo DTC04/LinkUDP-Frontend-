@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,12 @@ import { ChevronLeft, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/use-auth"
 
+interface Course {
+  id: number
+  name: string
+  subject_area: string
+}
+
 export default function TutorOnboardingPage() {
   const router = useRouter()
   const { updateTutorProfile, loading, error } = useAuth()
@@ -25,8 +31,34 @@ export default function TutorOnboardingPage() {
     bio: "",
   })
 
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([])
   const [courses, setCourses] = useState<{ id: number; name: string; level: string; grade: string }[]>([])
   const [newCourse, setNewCourse] = useState({ name: "", level: "", grade: "" })
+  const [coursesLoading, setCoursesLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
+          credentials: "include",
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableCourses(data)
+        } else {
+          const errorData = await response.text();
+          console.error("Error fetching courses:", response.status, errorData)
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error)
+      } finally {
+        setCoursesLoading(false);
+      }
+    }
+
+    fetchCourses()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -42,8 +74,15 @@ export default function TutorOnboardingPage() {
     setNewCourse((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleNewCourseSelectChange = (value: string) => {
-    setNewCourse((prev) => ({ ...prev, level: value }))
+  const handleNewCourseSelectChange = (name: string, value: string) => {
+    if (name === "name") {
+      const selectedCourse = availableCourses.find((c) => c.name === value)
+      if (selectedCourse) {
+        setNewCourse((prev) => ({ ...prev, name: selectedCourse.name, id: selectedCourse.id }))
+      }
+    } else {
+      setNewCourse((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const addCourse = () => {
@@ -55,8 +94,14 @@ export default function TutorOnboardingPage() {
         return
       }
 
-      setCourses([...courses, { id: Date.now(), ...newCourse }])
-      setNewCourse({ name: "", level: "", grade: "" })
+      const courseToAdd = availableCourses.find(c => c.name === newCourse.name);
+      if (courseToAdd) {
+        setCourses([...courses, { id: courseToAdd.id, name: courseToAdd.name, level: newCourse.level, grade: newCourse.grade }])
+        setNewCourse({ name: "", level: "", grade: "" })
+      } else {
+        alert("El curso seleccionado no es válido.")
+      }
+
     } else {
       alert("Por favor completa todos los campos del curso")
     }
@@ -187,17 +232,22 @@ export default function TutorOnboardingPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="courseName">Nombre del curso</Label>
-                    <Input
-                      id="courseName"
-                      name="name"
-                      value={newCourse.name}
-                      onChange={handleNewCourseChange}
-                      placeholder="Ej: Cálculo I"
-                    />
+                    <Select onValueChange={(value) => handleNewCourseSelectChange("name", value)}>
+                      <SelectTrigger id="courseName">
+                        <SelectValue placeholder={coursesLoading ? "Cargando cursos..." : "Selecciona un curso"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCourses.map((course) => (
+                          <SelectItem key={course.id} value={course.name}>
+                            {course.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="courseLevel">Nivel</Label>
-                    <Select onValueChange={handleNewCourseSelectChange}>
+                    <Select onValueChange={(value) => setNewCourse((prev) => ({ ...prev, level: value }))}>
                       <SelectTrigger id="courseLevel">
                         <SelectValue placeholder="Selecciona el nivel" />
                       </SelectTrigger>

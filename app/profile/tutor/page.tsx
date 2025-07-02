@@ -57,7 +57,7 @@ interface UserBaseData {
 }
 interface AvailabilityBlockFromApi {
   id?: number;
-  day_of_week: DayOfWeek;
+  day_of_week: string;
   start_time: string;
   end_time: string;
 }
@@ -156,6 +156,8 @@ export default function TutorProfileEditPageOriginalDesign() {
     grade: "",
     courseId: "",
   });
+  const [availableCourses, setAvailableCourses] = useState<ExpertiseAreaData[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [availabilityBlocks, setAvailabilityBlocks] = useState<
     AvailabilityBlockData[]
   >([]);
@@ -199,7 +201,7 @@ export default function TutorProfileEditPageOriginalDesign() {
             academic_year: tutorProfile?.academic_year || "", // Usar "" para que el placeholder se muestre
           });
           setExpertiseAreas(
-            tutorProfile?.courses?.map((c) => ({
+            tutorProfile?.courses?.map((c: TutorCourseFromApi) => ({
               id: c.courseId,
               name: c.courseName,
               level: c.level,
@@ -207,7 +209,7 @@ export default function TutorProfileEditPageOriginalDesign() {
             })) || []
           );
           setAvailabilityBlocks(
-            tutorProfile?.availability?.map((ab, i) => ({
+            tutorProfile?.availability?.map((ab: AvailabilityBlockFromApi, i: number) => ({
               id: Date.now() + i,
               day: ab.day_of_week as DayOfWeek,
               startTime: ab.start_time,
@@ -225,7 +227,29 @@ export default function TutorProfileEditPageOriginalDesign() {
       }
       setIsFetching(false);
     };
+
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const response = await fetch(`http://localhost:3000/courses`, {
+          credentials: "include",
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableCourses(data)
+        } else {
+          const errorData = await response.text();
+          console.error("Error fetching courses:", response.status, errorData)
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error)
+      } finally {
+        setCoursesLoading(false);
+      }
+    }
+
     fetchProfileData();
+    fetchCourses();
   }, [getCurrentUserProfile, authError]);
 
   const handleProfileChange = (
@@ -257,37 +281,30 @@ export default function TutorProfileEditPageOriginalDesign() {
   };
 
   const addExpertiseArea = () => {
-    if (!newExpertiseArea.name || !newExpertiseArea.level) {
-      /* ... */ return;
+    if (newExpertiseArea.courseId && newExpertiseArea.level) {
+      const grade = newExpertiseArea.grade
+        ? parseFloat(newExpertiseArea.grade)
+        : null;
+      if (
+        newExpertiseArea.grade &&
+        (isNaN(grade!) || grade! < 1.0 || grade! > 7.0)
+      ) {
+        return;
+      }
+      const courseToAdd = availableCourses.find(c => c.id.toString() === newExpertiseArea.courseId);
+      if (courseToAdd && !expertiseAreas.some(e => e.id === courseToAdd.id)) {
+        setExpertiseAreas((prev) => [
+          ...prev,
+          {
+            id: courseToAdd.id,
+            name: courseToAdd.name,
+            level: newExpertiseArea.level,
+            grade,
+          },
+        ]);
+        setNewExpertiseArea({ name: "", level: "", grade: "", courseId: "" });
+      }
     }
-    const grade = newExpertiseArea.grade
-      ? parseFloat(newExpertiseArea.grade)
-      : null;
-    if (
-      newExpertiseArea.grade &&
-      (isNaN(grade!) || grade! < 1.0 || grade! > 7.0)
-    ) {
-      /* ... */ return;
-    }
-    const tempCourseId = newExpertiseArea.courseId
-      ? parseInt(newExpertiseArea.courseId)
-      : Date.now();
-    if (
-      newExpertiseArea.courseId &&
-      (isNaN(tempCourseId) || tempCourseId <= 0)
-    ) {
-      /* ... */ return;
-    }
-    setExpertiseAreas((prev) => [
-      ...prev,
-      {
-        id: tempCourseId,
-        name: newExpertiseArea.name,
-        level: newExpertiseArea.level,
-        grade,
-      },
-    ]);
-    setNewExpertiseArea({ name: "", level: "", grade: "", courseId: "" });
   };
   const removeExpertiseArea = (id: number) =>
     setExpertiseAreas((prev) => prev.filter((area) => area.id !== id));
@@ -685,20 +702,22 @@ export default function TutorProfileEditPageOriginalDesign() {
                   </div>
                 ))}
               <div className="border-dashed border p-4 space-y-3">
-                <h4>Añadir Curso</h4> {/* Changed "Área" to "Curso" */}
-                <Input
-                  name="courseId"
+                <h4>Añadir Curso</h4>
+                <Select
                   value={newExpertiseArea.courseId}
-                  onChange={handleNewExpertiseChange}
-                  placeholder="ID Curso (Temporal)"
-                  type="number"
-                />
-                <Input
-                  name="name"
-                  value={newExpertiseArea.name}
-                  onChange={handleNewExpertiseChange}
-                  placeholder="Nombre Curso"
-                />
+                  onValueChange={(value) => setNewExpertiseArea((prev) => ({ ...prev, courseId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={coursesLoading ? "Cargando cursos..." : "Selecciona un curso"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCourses.map((course) => (
+                      <SelectItem key={course.id} value={course.id.toString()}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select
                   name="level"
                   value={newExpertiseArea.level}

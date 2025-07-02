@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -72,6 +79,8 @@ export default function StudentProfilePage() {
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("general"); // Pestaña activa por defecto
+  const [availableCourses, setAvailableCourses] = useState<InterestState[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -130,7 +139,28 @@ export default function StudentProfilePage() {
       }
     };
   
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const response = await fetch(`http://localhost:3000/courses`, {
+          credentials: "include",
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableCourses(data)
+        } else {
+          const errorData = await response.text();
+          console.error("Error fetching courses:", response.status, errorData)
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error)
+      } finally {
+        setCoursesLoading(false);
+      }
+    }
+
     fetchProfileData();
+    fetchCourses();
   }, [router]);
   
 
@@ -147,20 +177,12 @@ export default function StudentProfilePage() {
   };
 
   const addInterest = () => {
-    if (
-      newInterest.trim() &&
-      !interests.some(
-        (i) => i.name.toLowerCase() === newInterest.trim().toLowerCase()
-      )
-    ) {
-      alert(
-        "Funcionalidad de agregar nuevo interés: considera cómo obtendrás el ID del curso para '" +
-          newInterest.trim() +
-          "'. Por ahora, esta acción es solo visual y no se guardará correctamente sin un ID de curso válido."
-      );
-      // Para un ejemplo visual rápido:
-      // setInterests([...interests, { id: Date.now(), name: newInterest.trim() }]);
-      // setNewInterest("");
+    if (newInterest) {
+      const courseToAdd = availableCourses.find(c => c.id.toString() === newInterest);
+      if (courseToAdd && !interests.some(i => i.id === courseToAdd.id)) {
+        setInterests([...interests, courseToAdd]);
+        setNewInterest("");
+      }
     }
   };
 
@@ -515,33 +537,29 @@ export default function StudentProfilePage() {
                       ))}
                     </div>
                     <div className="flex gap-2 items-center border-t pt-4">
-                      {" "}
-                      {/* Divisor y espaciado */}
                       <div className="grid gap-2 flex-grow">
-                        {" "}
-                        {/* Para que el input tome el espacio */}
                         <Label htmlFor="newInterest" className="sr-only">
                           Añadir interés
-                        </Label>{" "}
-                        {/* sr-only si el placeholder es suficiente */}
-                        <Input
-                          id="newInterest"
-                          placeholder="Añadir nuevo curso de interés" /* Changed placeholder */
-                          value={newInterest}
-                          onChange={handleNewInterestChange}
-                          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) =>
-                            e.key === "Enter" && addInterest()
-                          }
-                        />
+                        </Label>
+                        <Select onValueChange={setNewInterest} value={newInterest}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={coursesLoading ? "Cargando cursos..." : "Selecciona un curso"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCourses.map((course) => (
+                              <SelectItem key={course.id} value={course.id.toString()}>
+                                {course.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <Button
                         type="button"
                         onClick={addInterest}
                         variant="outline"
-                        // size="icon" // Puedes usar esto o texto
                       >
-                        <Plus className="h-4 w-4 mr-2" /> Añadir{" "}
-                        {/* Añadido texto para claridad */}
+                        <Plus className="h-4 w-4 mr-2" /> Añadir
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">

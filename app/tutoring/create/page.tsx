@@ -32,6 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar"; // Added Calendar component
 import { format, parse as parseDateFns } from "date-fns"; // Added format, parse
 import { es } from "date-fns/locale"; // Added es locale
+import { forbiddenWords } from "../../../lib/forbidden-words";
 
 interface Course {
   id: number;
@@ -60,6 +61,11 @@ export default function CreateTutoringPage() {
     startTime: "",
     endTime: "",
     location: "",
+  });
+
+  const [formErrors, setFormErrors] = useState({
+    title: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -108,11 +114,28 @@ export default function CreateTutoringPage() {
     fetchInitialData();
   }, [getCurrentUserProfile, router]);
 
+  const validateField = (name: string, value: string) => {
+    const lowerCaseValue = value.toLowerCase();
+    for (const word of forbiddenWords) {
+      if (lowerCaseValue.includes(word)) {
+        setFormErrors((prev) => ({
+          ...prev,
+          [name]: `El campo contiene palabras no permitidas: ${word}`,
+        }));
+        return;
+      }
+    }
+    setFormErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "title" || name === "description") {
+      validateField(name, value);
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -279,6 +302,9 @@ export default function CreateTutoringPage() {
                 onChange={handleChange}
                 required
               />
+              {formErrors.title && (
+                <p className="text-sm text-red-500">{formErrors.title}</p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="courseId">Curso</Label> {/* Changed "Área" to "Curso" and htmlFor */}
@@ -317,6 +343,11 @@ export default function CreateTutoringPage() {
                 rows={4}
                 required
               />
+              {formErrors.description && (
+                <p className="text-sm text-red-500">
+                  {formErrors.description}
+                </p>
+              )}
             </div>
             {/* Date Picker Group */}
             <div className="grid gap-2">
@@ -389,7 +420,12 @@ export default function CreateTutoringPage() {
             <Button
               type="submit"
               className="bg-sky-600 hover:bg-sky-700"
-              disabled={authLoading || !currentUserProfile } // Eliminada la comprobación de apiToken
+              disabled={
+                authLoading ||
+                !currentUserProfile ||
+                !!formErrors.title ||
+                !!formErrors.description
+              }
             >
               Crear Tutoría
             </Button>

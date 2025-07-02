@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+
+interface Course {
+  id: number
+  name: string
+  subject_area: string
+}
 
 export default function StudentOnboardingPage() {
   const router = useRouter()
@@ -21,9 +28,35 @@ export default function StudentOnboardingPage() {
     university: "",
     career: "",
     study_year: 0,
-    interests: "",
     bio: "",
   })
+  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
+          credentials: "include",
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableCourses(data)
+        } else {
+          const errorData = await response.text();
+          console.error("Error fetching courses:", response.status, errorData)
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error)
+      } finally {
+        setCoursesLoading(false);
+      }
+    }
+
+    fetchCourses()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -34,9 +67,15 @@ export default function StudentOnboardingPage() {
     setFormData((prev) => ({ ...prev, [name]: name === 'study_year' ? parseInt(value, 10) : value }));
   }
 
+  const handleCourseChange = (courseId: number) => {
+    setSelectedCourses((prev) =>
+      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId]
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result = await updateStudentProfile(formData);
+    const result = await updateStudentProfile({ ...formData, interestCourseIds: selectedCourses });
 
     if (result) {
       console.log("Perfil de estudiante creado:", result)
@@ -105,15 +144,28 @@ export default function StudentOnboardingPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="interests">Áreas de interés</Label>
-              <Textarea
-                id="interests"
-                name="interests"
-                placeholder="Ej: Matemáticas, Física, Programación"
-                value={formData.interests}
-                onChange={handleChange}
-                rows={2}
-              />
+              <Label>Cursos de interés</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-md border p-4 max-h-60 overflow-y-auto">
+                {coursesLoading ? (
+                  <p>Cargando cursos...</p>
+                ) : (
+                  availableCourses.map((course) => (
+                    <div key={course.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`course-${course.id}`}
+                        checked={selectedCourses.includes(course.id)}
+                        onCheckedChange={() => handleCourseChange(course.id)}
+                      />
+                      <label
+                        htmlFor={`course-${course.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {course.name}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="bio">Acerca de ti (opcional)</Label>

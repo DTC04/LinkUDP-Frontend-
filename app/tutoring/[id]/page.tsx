@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { forbiddenWords } from "../../../lib/forbidden-words"
 
 interface UserProfile {
   id: number
@@ -561,10 +562,28 @@ function ContactForm({
   tutorEmail: string
 }) {
   const [message, setMessage] = useState("")
+  const [messageError, setMessageError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const params = useParams<{ id: string }>()
+
+  const validateMessage = (value: string) => {
+    const lowerCaseValue = value.toLowerCase()
+    for (const word of forbiddenWords) {
+      if (lowerCaseValue.includes(word)) {
+        setMessageError(`El mensaje contiene palabras no permitidas: ${word}`)
+        return
+      }
+    }
+    setMessageError("")
+  }
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = e.target
+    setMessage(value)
+    validateMessage(value)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -608,10 +627,13 @@ function ContactForm({
           id="message"
           placeholder={`Hola ${tutorName}, estoy interesado en la tutoría "${tutoringTitle}". Me gustaría saber más sobre...`}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleMessageChange}
           rows={4}
           required
         />
+        {messageError && (
+          <p className="text-sm text-red-500">{messageError}</p>
+        )}
       </div>
       <div className="text-sm text-muted-foreground">
         <strong>Email del tutor:</strong> {tutorEmail}
@@ -623,7 +645,11 @@ function ContactForm({
         <div className="text-red-600 text-sm">{error}</div>
       )}
       <DialogFooter>
-        <Button type="submit" disabled={isSubmitting || !message.trim()} className="bg-sky-600 hover:bg-sky-700">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !message.trim() || !!messageError}
+          className="bg-sky-600 hover:bg-sky-700"
+        >
           {isSubmitting ? "Enviando..." : "Enviar mensaje"}
         </Button>
       </DialogFooter>

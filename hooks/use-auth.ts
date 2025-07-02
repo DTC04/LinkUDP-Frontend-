@@ -1,5 +1,3 @@
-// src/hooks/use-auth.ts
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -111,16 +109,42 @@ interface UpdateTutorSpecificProfilePayload {
   }>;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const getApiBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:3000`;
+  }
+  return "http://localhost:3000"; // Fallback for server-side rendering
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const AuthContext = createContext<any>(null);
 
 export function useAuth() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Iniciar en true para la carga inicial
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
+  const checkAuth = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/profile/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const getCurrentUserProfile = useCallback(async (): Promise<UserProfile | null> => {
     setLoading(true);
@@ -144,34 +168,9 @@ export function useAuth() {
     }
   }, []);
 
-
-  const refetchUser = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/profile/me`, {
-        method: "GET",
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUser(data.user);
-      } else {
-        console.error("No se pudo refrescar el usuario:", data.message);
-      }
-    } catch (err: any) {
-      console.error("Error en refetchUser:", err.message);
-    }
-  };
-
-
-  // ✅ Cargar automáticamente el usuario al montar
   useEffect(() => {
-    (async () => {
-      const profile = await getCurrentUserProfile();
-      if (profile?.user) {
-        setUser(profile.user);
-      }
-    })();
-  }, [getCurrentUserProfile]);
+    checkAuth();
+  }, [checkAuth]);
 
   const login = async (credentials: Credentials) => {
     setLoading(true);
@@ -185,27 +184,19 @@ export function useAuth() {
       });
       const data = await res.json();
 
-      if (res.status === 429 || res.status === 403) {
-        throw new Error(data.message || "Demasiados intentos. Intenta más tarde.");
-      }
-
       if (!res.ok) {
         throw new Error(data.message || "Error al iniciar sesión.");
       }
 
-      const response = await getCurrentUserProfile();
-      if (response?.user) {
-        setUser(response.user);
-        if (response.user.role === "STUDENT") {
-          router.push("/dashboard/student");
-        } else {
-          router.push("/dashboard/tutor");
-        }
+      if (data.user.role === "STUDENT") {
+        window.location.assign("/dashboard/student");
+      } else {
+        window.location.assign("/dashboard/tutor");
       }
+
       return data;
     } catch (err: any) {
-      console.error("Error en login:", err);
-      setError(err.message || "Ocurrió un error al iniciar sesión.");
+      setError(err.message);
       return null;
     } finally {
       setLoading(false);
@@ -225,26 +216,20 @@ export function useAuth() {
 
       const responseData = await res.json();
 
-      if (res.status === 409) {
-        throw new Error("El correo electrónico ya está registrado.");
-      }
-
       if (!res.ok) {
         throw new Error(responseData.message || "Error al registrar usuario.");
       }
 
+      // Redirigir después del registro exitoso
       if (registerData.role === "STUDENT") {
         router.push("/onboarding/student");
-      } else if (registerData.role === "TUTOR" || registerData.role === "BOTH") {
-        router.push("/onboarding/tutor");
       } else {
-        router.push("/dashboard");
+        router.push("/onboarding/tutor");
       }
 
       return responseData;
     } catch (err: any) {
-      console.error("Error en registro:", err);
-      setError(err.message || "Ocurrió un error durante el registro.");
+      setError(err.message);
       return null;
     } finally {
       setLoading(false);
@@ -255,20 +240,14 @@ export function useAuth() {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
-        full_name: data.full_name,
-        photo_url: data.photo_url,
-        bio: data.bio,
-        university: data.university,
-        career: data.career,
-        study_year: data.study_year,
-        interestCourseIds: data.interestCourseIds,
-      };
-      Object.keys(payload).forEach((key) => {
-        if (payload[key as keyof typeof payload] === undefined) {
-          delete payload[key as keyof typeof payload];
-        }
-      });
+      const payload: UpdateStudentProfileData = {};
+      if (data.full_name) payload.full_name = data.full_name;
+      if (data.photo_url) payload.photo_url = data.photo_url;
+      if (data.bio) payload.bio = data.bio;
+      if (data.university) payload.university = data.university;
+      if (data.career) payload.career = data.career;
+      if (data.study_year) payload.study_year = data.study_year;
+      if (data.interestCourseIds) payload.interestCourseIds = data.interestCourseIds;
 
       const res = await fetch(`${API_BASE_URL}/profile/me`, {
         method: "PATCH",
@@ -333,15 +312,15 @@ export function useAuth() {
       setLoading(false);
     }
   };
-
-
-
+  
   const logout = useCallback(() => {
-    setUser(null);
     fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
-    }).finally(() => router.push("/login"));
+    }).finally(() => {
+      setUser(null);
+      router.push("/login");
+    });
   }, [router]);
 
   return {
@@ -350,10 +329,10 @@ export function useAuth() {
     error,
     login,
     register,
+    logout,
+    checkAuth,
     updateStudentProfile,
     updateTutorProfile,
     getCurrentUserProfile,
-    refetchUser,
-    logout,
   };
 }
