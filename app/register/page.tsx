@@ -250,7 +250,7 @@ export default function RegisterPage() {
               type="button"
               onClick={() =>
                 (window.location.href =
-                  "http://localhost:3000/auth/google")
+                  `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`)
               }
               className="w-full bg-red-600 py-3 text-base hover:bg-red-700"
             >

@@ -69,14 +69,14 @@ export default function CalendarPage() {
 
       setLoadingTutorias(true);
       try {
-        let endpoint = "http://localhost:3000/tutorias";
+        let endpoint = `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias`;
         let isStudentView = false;
 
         if (profile?.user?.role === "STUDENT" || profile?.user?.role === "BOTH") {
-          endpoint = "http://localhost:3000/bookings/me?status=PENDING&status=CONFIRMED";
+          endpoint = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/me?status=PENDING&status=CONFIRMED`;
           isStudentView = true;
         } else if (profile?.user?.role === "TUTOR" && profile.tutorProfile?.id) {
-          endpoint = `http://localhost:3000/tutorias?tutorId=${profile.tutorProfile.id}`;
+          endpoint = `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias?tutorId=${profile.tutorProfile.id}`;
         } else if (profile?.user?.role === "TUTOR" && !profile.tutorProfile?.id) {
           console.error("User has TUTOR role but no tutorProfile.id, cannot fetch tutorias for calendar.");
           setLoadingTutorias(false);

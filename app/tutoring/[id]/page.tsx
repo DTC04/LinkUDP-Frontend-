@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { forbiddenWords } from "../../../lib/forbidden-words"
 
 interface UserProfile {
   id: number
@@ -105,7 +106,7 @@ export default function TutoringDetailsPage() {
     }
 
     try {
-      const tutoringResponse = await fetch(`http://localhost:3000/tutorias/${params.id}`)
+      const tutoringResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${params.id}`)
       if (!tutoringResponse.ok) {
         if (tutoringResponse.status === 404) {
           throw new Error("Tutoría no encontrada.")
@@ -118,7 +119,7 @@ export default function TutoringDetailsPage() {
       if (authenticated && tutoringData.id) {
         try {
           const userBookingsResponse = await fetch(
-            `http://localhost:3000/bookings/me?sessionId=${tutoringData.id}&status=PENDING&status=CONFIRMED`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/me?sessionId=${tutoringData.id}&status=PENDING&status=CONFIRMED`,
             { credentials: "include" },
           )
 
@@ -178,7 +179,7 @@ export default function TutoringDetailsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/bookings/${tutoring.id}/book`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${tutoring.id}/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -217,7 +218,7 @@ export default function TutoringDetailsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/bookings/${currentBookingId}/cancel`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${currentBookingId}/cancel`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -561,10 +562,28 @@ function ContactForm({
   tutorEmail: string
 }) {
   const [message, setMessage] = useState("")
+  const [messageError, setMessageError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const params = useParams<{ id: string }>()
+
+  const validateMessage = (value: string) => {
+    const lowerCaseValue = value.toLowerCase()
+    for (const word of forbiddenWords) {
+      if (lowerCaseValue.includes(word)) {
+        setMessageError(`El mensaje contiene palabras no permitidas: ${word}`)
+        return
+      }
+    }
+    setMessageError("")
+  }
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = e.target
+    setMessage(value)
+    validateMessage(value)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -577,7 +596,7 @@ function ContactForm({
 
     try {
       const response = await fetch(
-        `http://localhost:3000/tutorias/${params.id}/contact`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${params.id}/contact`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -608,10 +627,13 @@ function ContactForm({
           id="message"
           placeholder={`Hola ${tutorName}, estoy interesado en la tutoría "${tutoringTitle}". Me gustaría saber más sobre...`}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleMessageChange}
           rows={4}
           required
         />
+        {messageError && (
+          <p className="text-sm text-red-500">{messageError}</p>
+        )}
       </div>
       <div className="text-sm text-muted-foreground">
         <strong>Email del tutor:</strong> {tutorEmail}
@@ -623,7 +645,11 @@ function ContactForm({
         <div className="text-red-600 text-sm">{error}</div>
       )}
       <DialogFooter>
-        <Button type="submit" disabled={isSubmitting || !message.trim()} className="bg-sky-600 hover:bg-sky-700">
+        <Button
+          type="submit"
+          disabled={isSubmitting || !message.trim() || !!messageError}
+          className="bg-sky-600 hover:bg-sky-700"
+        >
           {isSubmitting ? "Enviando..." : "Enviar mensaje"}
         </Button>
       </DialogFooter>

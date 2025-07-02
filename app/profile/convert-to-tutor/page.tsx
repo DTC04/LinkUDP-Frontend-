@@ -85,7 +85,7 @@ export default function ConvertToTutorPage() {
     );
 
     try {
-      const response = await fetch("http://localhost:3000/profile/me/tutor", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/me/tutor`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

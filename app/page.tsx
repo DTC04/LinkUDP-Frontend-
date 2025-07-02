@@ -1,76 +1,131 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Filter } from "lucide-react";
+import { ArrowRight, BookOpen, Users, Calendar, LayoutDashboard } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
+  const dashboardHref = user ? (user.role === 'STUDENT' ? '/dashboard/student' : '/dashboard/tutor') : '/login';
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-col min-h-screen bg-white">
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-sky-50">
+        {/* Hero Section */}
+        <section className="w-full py-20 md:py-32 bg-sky-50">
+          <div className="container px-4 md:px-6 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-sky-800">
+              Tu Éxito Académico Comienza Aquí
+            </h1>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+              Conectamos a estudiantes con tutores expertos de la UDP para potenciar tu aprendizaje.
+            </p>
+            <div className="mt-8 flex justify-center gap-4">
+              {!loading && (
+                <>
+                  {user ? (
+                    <Link href={dashboardHref}>
+                      <Button size="lg" className="bg-sky-600 text-white hover:bg-sky-700">
+                        Ir al Dashboard <LayoutDashboard className="ml-2 h-5 w-5" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href="/register">
+                        <Button size="lg" className="bg-sky-600 text-white hover:bg-sky-700">
+                          Comenzar Ahora <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </Link>
+                      <Link href="/login">
+                        <Button size="lg" variant="outline" className="text-sky-600 border-sky-600 hover:bg-sky-100">
+                          Iniciar Sesión
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* How it Works Section */}
+        <section className="w-full py-16 md:py-24 bg-white">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-sky-700">
-                  Conecta con tutores universitarios
-                </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  LINKUDP te ayuda a encontrar tutores para tus materias
-                  universitarias de forma rápida y sencilla.
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-800">
+              ¿Cómo Funciona?
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-center text-gray-500">
+              Encuentra ayuda o comparte tu conocimiento en tres simples pasos.
+            </p>
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
+              <div className="flex flex-col items-center text-center p-6">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-sky-100 text-sky-600">
+                  <Users className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-bold text-gray-800">1. Regístrate</h3>
+                <p className="mt-2 text-gray-500">
+                  Crea tu perfil como estudiante, tutor, o ambos. Es rápido y fácil.
                 </p>
               </div>
-              <div className="space-x-4">
-                <Link href="/register">
-                  <Button className="bg-sky-600 hover:bg-sky-700">
-                    Registrarse
-                  </Button>
-                </Link>
+              <div className="flex flex-col items-center text-center p-6">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-sky-100 text-sky-600">
+                  <BookOpen className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-bold text-gray-800">2. Explora</h3>
+                <p className="mt-2 text-gray-500">
+                  Busca tutorías por materia o explora la lista de tutores disponibles.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-sky-100 text-sky-600">
+                  <Calendar className="h-8 w-8" />
+                </div>
+                <h3 className="mt-6 text-xl font-bold text-gray-800">3. Agenda</h3>
+                <p className="mt-2 text-gray-500">
+                  Revisa la disponibilidad del tutor y agenda una sesión en el horario que más te acomode.
+                </p>
               </div>
             </div>
           </div>
         </section>
-        <section className="container px-4 py-12 md:px-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-sky-700">
-                Tutorías Disponibles
-              </h2>
-              <p className="text-muted-foreground">
-                Encuentra la tutoría que necesitas para tus materias.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                className="max-w-[200px]"
-                placeholder="Buscar tutoría..."
-              />
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-                <span className="sr-only">Filtrar tutorías</span>
-              </Button>
+
+        {/* Features Section */}
+        <section className="w-full py-16 md:py-24 bg-gray-50">
+          <div className="container px-4 md:px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-800">
+              Una Plataforma Pensada para Ti
+            </h2>
+            <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="p-6 bg-white border rounded-lg shadow-sm">
+                <h3 className="text-xl font-bold text-sky-700">Tutores Verificados</h3>
+                <p className="mt-2 text-gray-500">
+                  Todos nuestros tutores son estudiantes de la UDP con excelente rendimiento académico.
+                </p>
+              </div>
+              <div className="p-6 bg-white border rounded-lg shadow-sm">
+                <h3 className="text-xl font-bold text-sky-700">Flexibilidad de Horarios</h3>
+                <p className="mt-2 text-gray-500">
+                  Agenda tutorías en los horarios que mejor se adapten a tu vida universitaria.
+                </p>
+              </div>
+              <div className="p-6 bg-white border rounded-lg shadow-sm">
+                <h3 className="text-xl font-bold text-sky-700">Feedback y Calificaciones</h3>
+                <p className="mt-2 text-gray-500">
+                  Deja tu opinión sobre las tutorías y ayuda a otros a encontrar al mejor tutor.
+                </p>
+              </div>
             </div>
           </div>
-          <div className="grid gap-6 pt-8 md:grid-cols-2 lg:grid-cols-3"></div>
         </section>
       </main>
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            © 2025 LINKUDP. Todos los derechos reservados.
-          </p>
+      <footer className="border-t py-6 bg-white">
+        <div className="container text-center text-sm text-gray-500">
+          © 2025 LINKUDP. Todos los derechos reservados.
         </div>
       </footer>
     </div>
   );
 }
-
-const tutorings = [];

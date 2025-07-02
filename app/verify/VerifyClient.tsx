@@ -16,7 +16,7 @@ export default function VerifyPage() {
     }
 
     axios
-      .get(`http://localhost:3000/auth/verify?token=${token}`)
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/verify?token=${token}`)
       .then((res) => {
         setMessage(res.data.message);
       })

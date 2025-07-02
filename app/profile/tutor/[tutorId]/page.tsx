@@ -108,7 +108,7 @@ export default function TutorPublicProfilePage() {
         setLoading(true);
         setError(null);
         try {
-          const response = await fetch(`http://localhost:3000/profile/tutor/${params.tutorId}`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/tutor/${params.tutorId}`, {
             credentials: "include",
           });
   

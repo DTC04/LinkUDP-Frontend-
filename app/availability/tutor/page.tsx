@@ -43,7 +43,7 @@ export default function ManageAvailabilityPage() {
   const [isFinished, setIsFinished] = useState(false);
 
   const fetchBlocks = async (id: number) => {
-    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, { credentials: 'include' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/disponibilidad/${id}`, { credentials: 'include' });
     const data = await res.json();
     setBlocks(data);
   };
@@ -69,7 +69,7 @@ export default function ManageAvailabilityPage() {
     const end = new Date(`${newBlock.date}T${newBlock.end}:00`);
     const day_of_week = daysMap[start.getUTCDay()];
 
-    const res = await fetch('http://localhost:3000/disponibilidad', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/disponibilidad`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export default function ManageAvailabilityPage() {
     const end = new Date(`${date}T${editValues.end || formatTimeLocal(block.end_time)}:00`);
     const day_of_week = daysMap[start.getUTCDay()];
 
-    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/disponibilidad/${id}`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -120,7 +120,7 @@ export default function ManageAvailabilityPage() {
   };
 
   const handleDelete = async (id: number) => {
-    const res = await fetch(`http://localhost:3000/disponibilidad/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/disponibilidad/${id}`, {
       method: 'DELETE',
       credentials: 'include'
     });
