@@ -16,7 +16,7 @@ export default function SelectRolePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get('http://localhost:3000/auth/me', { withCredentials: true })
+    axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, { withCredentials: true })
       .then(res => {
         setUserId(res.data.id)
         setLoading(false)
@@ -28,7 +28,7 @@ export default function SelectRolePage() {
 
   const handleSubmit = async () => {
     if (!selectedRole || !userId) return
-    const res = await axios.post('http://localhost:3000/auth/assign-role', {
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/assign-role`, {
       role: selectedRole,
       userId,
     }, { withCredentials: true })

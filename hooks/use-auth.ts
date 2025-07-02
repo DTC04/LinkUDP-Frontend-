@@ -109,14 +109,7 @@ interface UpdateTutorSpecificProfilePayload {
   }>;
 }
 
-const getApiBaseUrl = () => {
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:3000`;
-  }
-  return "http://localhost:3000"; // Fallback for server-side rendering
-};
-
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export const AuthContext = createContext<any>(null);
 
@@ -331,6 +324,7 @@ export function useAuth() {
     register,
     logout,
     checkAuth,
+    refetchUser: checkAuth,
     updateStudentProfile,
     updateTutorProfile,
     getCurrentUserProfile,

@@ -25,7 +25,7 @@ Para obtener instrucciones detalladas sobre cómo levantar el entorno completo (
    ```bash
    pnpm dev
    ```
-   El frontend estará disponible en `http://localhost:3001`.
+   El frontend estará disponible en la URL que hayas configurado en `FRONTEND_URL`.
 
 ---
 

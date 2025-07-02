@@ -86,7 +86,7 @@ export default function TutoringListPage() {
 
     const isSaved = savedTutorings.includes(tutoringId);
     const method = isSaved ? "DELETE" : "POST";
-    const url = `http://localhost:3000/tutorias/${tutoringId}/save`;
+    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoringId}/save`;
 
     try {
       const response = await fetch(url, {
@@ -144,7 +144,7 @@ export default function TutoringListPage() {
   useEffect(() => {
     const fetchTutorings = async () => {
       try {
-        const response = await fetch("http://localhost:3000/tutorias", { credentials: "include" })
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias`, { credentials: "include" })
         if (!response.ok) {
           throw new Error("Error al obtener las tutorías")
         }
@@ -158,7 +158,7 @@ export default function TutoringListPage() {
     const fetchSavedTutorings = async () => {
       if (isLoggedIn) {
         try {
-          const response = await fetch("http://localhost:3000/tutorias/me/saved", {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/me/saved`, {
             credentials: "include",
           });
           if (response.ok) {
@@ -178,7 +178,7 @@ export default function TutoringListPage() {
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        const url = `http://localhost:3000/tutorias/recomendadas`;
+        const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/recomendadas`;
         const response = await fetch(url, { credentials: "include" });
         if (!response.ok) throw new Error("Error al obtener recomendaciones");
         const data = await response.json();
@@ -221,7 +221,7 @@ export default function TutoringListPage() {
     setSubmitting(true);
     try {
       // Llama a tu API real
-      const response = await fetch(`http://localhost:3000/tutorias/${modalTutoring.id}/rate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${modalTutoring.id}/rate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -117,7 +117,7 @@ function formatDate(iso: string) {
   return formatDateUTC(iso)
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 function formatHour(iso: string) {
   const date = new Date(iso)
   return date.toLocaleTimeString([], {
@@ -231,7 +231,7 @@ export default function TutorProfileEditPageOriginalDesign() {
     const fetchCourses = async () => {
       setCoursesLoading(true);
       try {
-        const response = await fetch(`http://localhost:3000/courses`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses`, {
           credentials: "include",
         })
         if (response.ok) {

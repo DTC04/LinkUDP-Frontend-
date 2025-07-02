@@ -103,7 +103,7 @@
 	      setError(null);
 
 	      try {
-	        const profileRes = await fetch("http://localhost:3000/profile/me", {
+	        const profileRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/me`, {
 				credentials: "include",
 	        });
 
@@ -127,7 +127,7 @@
 	            const studentProfileId = profileData.studentProfile.id;
 
 	            try {
-	              const upcomingRes = await fetch(`http://localhost:3000/bookings/me?status=CONFIRMED&status=PENDING&upcoming=true`, { 
+	              const upcomingRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/me?status=CONFIRMED&status=PENDING&upcoming=true`, {
 	                credentials: "include",
 	              });
 	              if (!upcomingRes.ok) throw new Error('Error al cargar próximas tutorías');
@@ -147,7 +147,7 @@
 
 	            try {
 	              // Fetch past confirmed and cancelled bookings for history
-	              const historyRes = await fetch(`http://localhost:3000/bookings/me?status=CONFIRMED&status=CANCELLED&past=true`, { 
+	              const historyRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/me?status=CONFIRMED&status=CANCELLED&past=true`, {
 	                credentials: "include",
 	              });
 	              if (!historyRes.ok) throw new Error('Error al cargar historial de tutorías');
@@ -169,7 +169,7 @@
 
 	          setLoadingRecommendations(true);
 	          try {
-	            const recomRes = await fetch(`http://localhost:3000/tutorias?status=AVAILABLE&limit=6`, { 
+	            const recomRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias?status=AVAILABLE&limit=6`, {
 					credentials: "include",
 	            });
 	            if (!recomRes.ok) throw new Error('Error al cargar tutorías recomendadas');
@@ -191,7 +191,7 @@
 
 	          setLoadingSaved(true);
 	          try {
-	            const savedRes = await fetch(`http://localhost:3000/tutorias/me/saved`, { 
+	            const savedRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/me/saved`, {
 	              credentials: "include",
 	            });
 	            if (savedRes.ok) {

@@ -9,7 +9,7 @@ import { MailCheck, Hourglass } from 'lucide-react';
 import axios from 'axios';
 
 export default function VerifyEmailPendingPage() {
-  const { user, refetchUser, loading } = useAuth();
+  const { user, refetchUser, loading }: { user: any, refetchUser: () => Promise<void>, loading: boolean } = useAuth();
   const router = useRouter();
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [resendMessage, setResendMessage] = useState('');
@@ -33,7 +33,7 @@ export default function VerifyEmailPendingPage() {
     }
     setResendStatus('sending');
     try {
-      await axios.post('http://localhost:3000/auth/resend-verification', { email: user.email });
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/resend-verification`, { email: user.email });
       setResendStatus('sent');
       setResendMessage('Se ha reenviado un nuevo enlace de verificación a tu correo.');
     } catch (error) {

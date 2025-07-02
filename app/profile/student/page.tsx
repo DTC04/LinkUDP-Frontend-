@@ -87,7 +87,7 @@ export default function StudentProfilePage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:3000/profile/me", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/me`, {
           credentials: "include",
         });
   
@@ -142,7 +142,7 @@ export default function StudentProfilePage() {
     const fetchCourses = async () => {
       setCoursesLoading(true);
       try {
-        const response = await fetch(`http://localhost:3000/courses`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses`, {
           credentials: "include",
         })
         if (response.ok) {
@@ -212,7 +212,7 @@ export default function StudentProfilePage() {
     };
     console.log("Guardando perfil de estudiante con payload:", payload);
     try {
-      const res = await fetch("http://localhost:3000/profile/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile/me`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -90,7 +90,7 @@ export default function CreateTutoringPage() {
       try {
         setLoadingCourses(true);
         // Aseguramos que se envíen las credenciales para obtener los cursos
-        const coursesResponse = await fetch("http://localhost:3000/courses", {
+        const coursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses`, {
           credentials: "include", // Agregado para enviar cookies de sesión
         });
         if (!coursesResponse.ok) {
@@ -223,7 +223,7 @@ export default function CreateTutoringPage() {
 
     try {
       console.log("Datos de tutoría a enviar:", tutoriaData);
-      const response = await fetch("http://localhost:3000/tutorias", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -75,7 +75,7 @@ export default function EditTutoringPage() {
           return;
         }
 
-        const tutoringRes = await fetch(`http://localhost:3000/tutorias/${params.id}`, { credentials: "include" });
+        const tutoringRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${params.id}`, { credentials: "include" });
         if (!tutoringRes.ok) {
           if (tutoringRes.status === 404) throw new Error("Tutoría no encontrada.");
           throw new Error("Error al cargar los datos de la tutoría.");
@@ -177,8 +177,8 @@ export default function EditTutoringPage() {
     console.log("Payload for PATCH:", JSON.stringify(payload));
 
     try {
-      console.log(`Attempting PATCH to http://localhost:3000/tutorias/${tutoring.id}`);
-      const response = await fetch(`http://localhost:3000/tutorias/${tutoring.id}`, {
+      console.log(`Attempting PATCH to ${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoring.id}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoring.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

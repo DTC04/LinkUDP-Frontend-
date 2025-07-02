@@ -125,7 +125,7 @@ export default function TutorDashboardPage() {
         try {
           // Fetch all relevant statuses for "Mis Tutorías"
           const statusesToFetch = ["AVAILABLE", "PENDING", "CONFIRMED", "CANCELLED"].map((s) => `status=${s}`).join("&");
-          const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&${statusesToFetch}`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias?tutorId=${tutorId}&${statusesToFetch}`, {
             credentials: "include",
           });
           if (!res.ok) throw new Error("Error al cargar mis tutorías");
@@ -152,7 +152,7 @@ export default function TutorDashboardPage() {
 
       const fetchSolicitudes = async () => {
         try {
-          const res = await fetch(`http://localhost:3000/tutorias?tutorId=${tutorId}&status=PENDING`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias?tutorId=${tutorId}&status=PENDING`, {
             credentials: "include",
           });
           if (!res.ok) throw new Error("Error al cargar solicitudes");
@@ -183,7 +183,7 @@ export default function TutorDashboardPage() {
       const fetchUpcomingSessions = async () => {
         try {
           const res = await fetch(
-            `http://localhost:3000/tutorias?tutorId=${tutorId}&status=CONFIRMED&status=PENDING&upcoming=true`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias?tutorId=${tutorId}&status=CONFIRMED&status=PENDING&upcoming=true`,
             {
               credentials: "include",
             },
@@ -249,7 +249,7 @@ export default function TutorDashboardPage() {
     setAccionEnCurso(`aceptar-${solicitudId}`);
     try {
       // Llamar al endpoint de confirmación de la tutoría por sessionId
-      const response = await fetch(`http://localhost:3000/bookings/session/${solicitudId}/confirm`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/session/${solicitudId}/confirm`, {
         method: "PATCH",
         credentials: "include",
         headers: {
@@ -310,7 +310,7 @@ export default function TutorDashboardPage() {
     setAccionEnCurso(`rechazar-${solicitudId}`);
     try {
       // Llamar al endpoint de cancelación de la tutoría por sessionId
-      const response = await fetch(`http://localhost:3000/bookings/session/${solicitudId}/cancel`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/session/${solicitudId}/cancel`, {
         method: "PATCH",
         credentials: "include",
         headers: {
@@ -356,7 +356,7 @@ export default function TutorDashboardPage() {
   const handleDeleteTutoring = async (tutoringId: string | number) => {
     setDeletingTutoringId(tutoringId); // Indicate which tutoring is being deleted for UI feedback
     try {
-      const response = await fetch(`http://localhost:3000/tutorias/${tutoringId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoringId}`, {
         method: "DELETE",
         credentials: "include", // Important for sending auth cookies
       });
@@ -849,7 +849,7 @@ function StudentsModal({
   const fetchStudents = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:3000/tutorias/${tutoring.id}/students`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoring.id}/students`, {
         credentials: "include",
       })
       if (!response.ok) throw new Error("Error al cargar estudiantes")
@@ -886,7 +886,7 @@ function StudentsModal({
   const handleRateStudent = async (studentId: string | number, rating: number) => {
     setRatingStudent(studentId)
     try {
-      const response = await fetch(`http://localhost:3000/tutorias/${tutoring.id}/rate-student`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tutorias/${tutoring.id}/rate-student`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -989,4 +989,3 @@ function StudentsModal({
     </Dialog>
   )
 }
-
