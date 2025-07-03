@@ -38,7 +38,7 @@ export default function StudentOnboardingPage() {
     const fetchCourses = async () => {
       setCoursesLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses`, {
           credentials: "include",
         })
         if (response.ok) {
